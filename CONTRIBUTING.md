@@ -50,18 +50,20 @@ Ejecuta las comprobaciones del proyecto:
 ruff check .
 ruff format --check .
 pytest
+python -m build
 ```
 
-Todos los comandos deben finalizar correctamente.
+Todos los comandos deben finalizar correctamente y sin errores.
 
 ## Cambios en los datos del PCGE
 
-Si modificas información contable, debes cumplir los siguientes requisitos:
+Si propones cambios o adiciones en la información del catálogo contable, debes cumplir estrictamente los siguientes requisitos:
 
-- Indica la fuente oficial.
-- Incluye la página, sección o referencia correspondiente cuando sea posible.
-- Explica el motivo del cambio.
-- No agregues información sin una fuente verificable.
+- **Evidencia oficial obligatoria**: No corrijas, infieras ni completes datos contables sin una fuente normativa oficial verificable.
+- **Registro de procedencia**: Es obligatorio registrar o actualizar `sources/<versión>/source.json` indicando título, autoridad normativa, resolución oficial, fecha, SHA-256 y páginas correspondientes.
+- **Documentación de anomalías**: Si el documento fuente presenta erratas, duplicidades o inconsistencias, no las corrijas silenciosamente; documéntalas de forma estructurada en `sources/<versión>/anomalies.json` detallando apariciones, disposición y estado.
+- **Consistencia y metadatos**: Actualiza `metadata.json` (incluyendo `entry_count` exacto) y comprueba que las entradas respeten los esquemas de `schemas/` y la jerarquía canónica de prefijos.
+- **Pruebas automatizadas**: Añade o actualiza pruebas en `tests/` para verificar la carga e integridad del dataset modificado.
 
 ## Pull requests
 
