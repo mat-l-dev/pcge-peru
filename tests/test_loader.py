@@ -129,10 +129,31 @@ def test_load_catalog_unavailable_version():
         load_catalog("9999")
 
 
-def test_load_catalog_real_2026_not_available_yet():
-    # In Block 2, no real resources for 2026 are packaged yet
-    with pytest.raises(PCGEDataError, match="not available"):
-        load_catalog("2026")
+def test_load_catalog_real_2026_integration():
+    cat = load_catalog("2026")
+    assert len(cat) == 1636
+    assert cat.metadata is not None
+    assert cat.metadata.pcge_version == "2026"
+    assert cat.metadata.schema_version == 1
+    assert cat.metadata.dataset_revision == 1
+    assert cat.metadata.entry_count == 1636
+
+    # Default call without argument loads the same 2026 catalog
+    cat_default = load_catalog()
+    assert len(cat_default) == 1636
+    assert cat_default.metadata == cat.metadata
+
+    # Confirm tuple(catalog) preserves documentary order
+    import importlib.resources as importlib_resources
+
+    data_pkg = importlib_resources.files("pcge.data")
+    entries_text = data_pkg.joinpath("2026", "entries.json").read_text(encoding="utf-8")
+    raw_entries = json.loads(entries_text)
+    expected_codes = [item["code"] for item in raw_entries]
+    catalog_codes = [entry.code for entry in cat]
+    assert catalog_codes == expected_codes
+    assert tuple(cat)[0].code == "1"
+    assert tuple(cat)[-1].code == "93"
 
 
 def test_load_catalog_missing_entries_file(tmp_path, monkeypatch):
