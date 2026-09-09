@@ -16,7 +16,7 @@ El propósito de `pcge-peru` es brindar una representación tipada y programáti
 
 El proyecto se encuentra en **etapa de desarrollo inicial** (`v0.1.0`). La API pública puede recibir ajustes y mejoras antes de alcanzar una versión de estabilidad definitiva.
 
-Actualmente el paquete no está publicado en PyPI; el código y los recursos empaquetados se distribuyen a través de este repositorio.
+El paquete se encuentra disponible públicamente en [PyPI](https://pypi.org/project/pcge-peru/).
 
 ---
 
@@ -26,7 +26,15 @@ Actualmente el paquete no está publicado en PyPI; el código y los recursos emp
 
 - **Python**: `>=3.14,<3.15` (probado en Python 3.14).
 
-### Instalación local para desarrollo
+### Instalación
+
+Instale el paquete desde PyPI:
+
+```bash
+pip install pcge-peru
+```
+
+### Instalación desde código fuente (desarrollo)
 
 Para clonar e instalar el proyecto en un entorno virtual:
 
