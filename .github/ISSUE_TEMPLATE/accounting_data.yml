@@ -1,0 +1,51 @@
+name: Corrección de datos PCGE
+description: Reporta una corrección o inconsistencia en los datos contables
+title: "[PCGE]: "
+labels:
+  - data
+body:
+  - type: input
+    id: account-code
+    attributes:
+      label: Código de cuenta
+      placeholder: "1041"
+    validations:
+      required: true
+
+  - type: input
+    id: current-value
+    attributes:
+      label: Valor actual
+      description: Indica el dato que consideras incorrecto.
+    validations:
+      required: true
+
+  - type: input
+    id: proposed-value
+    attributes:
+      label: Valor propuesto
+      description: Indica cuál debería ser el valor correcto.
+    validations:
+      required: true
+
+  - type: input
+    id: source
+    attributes:
+      label: Fuente oficial
+      description: Enlace, resolución, documento o fuente verificable.
+    validations:
+      required: true
+
+  - type: input
+    id: source-section
+    attributes:
+      label: Página, sección o referencia
+      description: Indica dónde aparece el dato en la fuente.
+
+  - type: textarea
+    id: explanation
+    attributes:
+      label: Explicación
+      description: Explica por qué debería realizarse el cambio.
+    validations:
+      required: true

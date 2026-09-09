@@ -1,0 +1,33 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "pcge-peru"
+version = "0.1.0"
+description = "Librería open source en Python para trabajar con el Plan Contable General Empresarial del Perú."
+readme = "README.md"
+requires-python = ">=3.14,<3.15"
+license = { file = "LICENSE" }
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/pcge"]
+
+[tool.ruff]
+target-version = "py314"
+line-length = 88
+
+[tool.ruff.lint]
+select = [
+    "E",  # Errores de estilo
+    "F",  # Errores de Pyflakes
+    "I",  # Orden de imports
+]
+
+[dependency-groups]
+dev = [
+    "build",
+    "pre-commit",
+    "pytest",
+    "ruff==0.16.6",
+]

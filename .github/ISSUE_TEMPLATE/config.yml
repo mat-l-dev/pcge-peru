@@ -1,0 +1,6 @@
+blank_issues_enabled: false
+
+contact_links:
+  - name: Discusiones generales
+    url: https://github.com/mat-l-dev/pcge-peru/discussions
+    about: Usa Discussions para preguntas o conversaciones generales.
