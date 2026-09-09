@@ -1,6 +1,7 @@
 import unicodedata
 from collections.abc import Iterable, Iterator
 
+from pcge.metadata import PCGEMetadata
 from pcge.models import PCGEEntry
 
 
@@ -10,7 +11,12 @@ def _normalize_for_search(text: str) -> str:
 
 
 class PCGECatalog:
-    def __init__(self, entries: Iterable[PCGEEntry]) -> None:
+    def __init__(
+        self,
+        entries: Iterable[PCGEEntry],
+        *,
+        metadata: PCGEMetadata | None = None,
+    ) -> None:
         entries_list: list[PCGEEntry] = []
         entries_by_code: dict[str, PCGEEntry] = {}
         children_by_code: dict[str, list[PCGEEntry]] = {}
@@ -26,6 +32,18 @@ class PCGECatalog:
             entries_list.append(item)
             entries_by_code[item.code] = item
             children_by_code[item.code] = []
+
+        if metadata is not None:
+            if not isinstance(metadata, PCGEMetadata):
+                item_type = type(metadata).__name__
+                raise TypeError(
+                    f"metadata must be PCGEMetadata or None, got {item_type}"
+                )
+            if metadata.entry_count != len(entries_list):
+                raise ValueError(
+                    f"metadata.entry_count ({metadata.entry_count}) does not match "
+                    f"catalog entry count ({len(entries_list)})"
+                )
 
         for entry in entries_list:
             if entry.parent_code is not None:
@@ -54,11 +72,16 @@ class PCGECatalog:
             for c in chain:
                 visited_status[c] = 2
 
+        self._metadata: PCGEMetadata | None = metadata
         self._entries: dict[str, PCGEEntry] = entries_by_code
         self._entries_order: tuple[PCGEEntry, ...] = tuple(entries_list)
         self._children: dict[str, tuple[PCGEEntry, ...]] = {
             code: tuple(kids) for code, kids in children_by_code.items()
         }
+
+    @property
+    def metadata(self) -> PCGEMetadata | None:
+        return self._metadata
 
     def __len__(self) -> int:
         return len(self._entries_order)

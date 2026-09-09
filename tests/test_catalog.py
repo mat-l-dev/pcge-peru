@@ -1,6 +1,6 @@
 import pytest
 
-from pcge import PCGECatalog, PCGEEntry
+from pcge import PCGECatalog, PCGEEntry, PCGEMetadata
 
 
 @pytest.fixture
@@ -349,3 +349,46 @@ def test_pcge_catalog_public_export():
     from pcge import PCGECatalog as ExportedCatalog
 
     assert ExportedCatalog is PCGECatalog
+
+
+def test_catalog_manual_without_metadata(catalog: PCGECatalog):
+    assert catalog.metadata is None
+
+
+def test_catalog_with_valid_metadata(sample_entries: list[PCGEEntry]):
+    meta = PCGEMetadata(
+        pcge_version="2026",
+        schema_version=1,
+        dataset_revision=1,
+        entry_count=len(sample_entries),
+    )
+    cat = PCGECatalog(sample_entries, metadata=meta)
+    assert cat.metadata == meta
+    assert cat.metadata is meta
+
+
+def test_catalog_rejects_invalid_metadata_type(sample_entries: list[PCGEEntry]):
+    with pytest.raises(TypeError):
+        PCGECatalog(sample_entries, metadata="not_metadata")  # type: ignore[arg-type]
+
+
+def test_catalog_rejects_inconsistent_entry_count(sample_entries: list[PCGEEntry]):
+    meta = PCGEMetadata(
+        pcge_version="2026",
+        schema_version=1,
+        dataset_revision=1,
+        entry_count=len(sample_entries) + 5,
+    )
+    with pytest.raises(ValueError, match="metadata.entry_count"):
+        PCGECatalog(sample_entries, metadata=meta)
+
+
+def test_catalog_rejects_positional_metadata(sample_entries: list[PCGEEntry]):
+    meta = PCGEMetadata(
+        pcge_version="2026",
+        schema_version=1,
+        dataset_revision=1,
+        entry_count=len(sample_entries),
+    )
+    with pytest.raises(TypeError):
+        PCGECatalog(sample_entries, meta)  # type: ignore[misc]
