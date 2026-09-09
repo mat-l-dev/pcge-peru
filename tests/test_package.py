@@ -6,7 +6,6 @@ from pcge import (
     PCGELevel,
     PCGEMetadata,
     load_catalog,
-    validate_dataset,
 )
 
 
@@ -21,7 +20,8 @@ def test_public_api_exports():
     assert pcge.PCGELevel is PCGELevel
     assert pcge.PCGEMetadata is PCGEMetadata
     assert pcge.load_catalog is load_catalog
-    assert pcge.validate_dataset is validate_dataset
+    assert not hasattr(pcge, "validate_dataset")
+    assert len(pcge.__all__) == 6
     assert pcge.__all__ == [
         "PCGECatalog",
         "PCGEDataError",
@@ -29,5 +29,4 @@ def test_public_api_exports():
         "PCGELevel",
         "PCGEMetadata",
         "load_catalog",
-        "validate_dataset",
     ]

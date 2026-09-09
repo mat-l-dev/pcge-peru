@@ -367,3 +367,97 @@ def test_load_catalog_semantic_error_propagated_as_pcge_data_error(
 
     with pytest.raises(PCGEDataError, match="expected prefix"):
         load_catalog("2026")
+
+
+def test_load_catalog_unsupported_schema_version(tmp_path, monkeypatch):
+    version_dir = tmp_path / "2026"
+    version_dir.mkdir()
+    meta_json = {
+        "pcge_version": "2026",
+        "schema_version": 2,
+        "dataset_revision": 1,
+        "entry_count": 1,
+    }
+    entries_json = [
+        {"code": "1", "name": "Activo", "parent_code": None},
+    ]
+    (version_dir / "metadata.json").write_text(json.dumps(meta_json), encoding="utf-8")
+    (version_dir / "entries.json").write_text(
+        json.dumps(entries_json), encoding="utf-8"
+    )
+
+    monkeypatch.setattr("pcge.loader.importlib_resources.files", lambda pkg: tmp_path)
+
+    with pytest.raises(PCGEDataError, match="Unsupported schema_version"):
+        load_catalog("2026")
+
+
+def test_load_catalog_code_with_more_than_six_digits(tmp_path, monkeypatch):
+    version_dir = tmp_path / "2026"
+    version_dir.mkdir()
+    meta_json = {
+        "pcge_version": "2026",
+        "schema_version": 1,
+        "dataset_revision": 1,
+        "entry_count": 2,
+    }
+    entries_json = [
+        {"code": "6", "name": "Elemento", "parent_code": None},
+        {"code": "6551111", "name": "Sintético 7 dígitos", "parent_code": "655111"},
+    ]
+    (version_dir / "metadata.json").write_text(json.dumps(meta_json), encoding="utf-8")
+    (version_dir / "entries.json").write_text(
+        json.dumps(entries_json), encoding="utf-8"
+    )
+
+    monkeypatch.setattr("pcge.loader.importlib_resources.files", lambda pkg: tmp_path)
+
+    with pytest.raises(PCGEDataError, match="Invalid code length"):
+        load_catalog("2026")
+
+
+def test_load_catalog_duplicate_code_wrapped_in_data_error(tmp_path, monkeypatch):
+    version_dir = tmp_path / "2026"
+    version_dir.mkdir()
+    meta_json = {
+        "pcge_version": "2026",
+        "schema_version": 1,
+        "dataset_revision": 1,
+        "entry_count": 2,
+    }
+    entries_json = [
+        {"code": "1", "name": "Activo", "parent_code": None},
+        {"code": "1", "name": "Activo duplicado", "parent_code": None},
+    ]
+    (version_dir / "metadata.json").write_text(json.dumps(meta_json), encoding="utf-8")
+    (version_dir / "entries.json").write_text(
+        json.dumps(entries_json), encoding="utf-8"
+    )
+
+    monkeypatch.setattr("pcge.loader.importlib_resources.files", lambda pkg: tmp_path)
+
+    with pytest.raises(PCGEDataError, match="Duplicate code"):
+        load_catalog("2026")
+
+
+def test_load_catalog_entry_count_mismatch_wrapped_in_data_error(tmp_path, monkeypatch):
+    version_dir = tmp_path / "2026"
+    version_dir.mkdir()
+    meta_json = {
+        "pcge_version": "2026",
+        "schema_version": 1,
+        "dataset_revision": 1,
+        "entry_count": 5,
+    }
+    entries_json = [
+        {"code": "1", "name": "Activo", "parent_code": None},
+    ]
+    (version_dir / "metadata.json").write_text(json.dumps(meta_json), encoding="utf-8")
+    (version_dir / "entries.json").write_text(
+        json.dumps(entries_json), encoding="utf-8"
+    )
+
+    monkeypatch.setattr("pcge.loader.importlib_resources.files", lambda pkg: tmp_path)
+
+    with pytest.raises(PCGEDataError, match="metadata.entry_count"):
+        load_catalog("2026")
