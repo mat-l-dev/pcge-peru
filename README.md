@@ -6,7 +6,7 @@ El proyecto tiene como objetivo proporcionar una representación estructurada y 
 
 ## Estado del proyecto
 
-- Proyecto en desarrollo.
+- Proyecto en desarrollo..
 
 El proyecto se está construyendo inicialmente tomando como referencia la **actualización del PCGE publicada en 2026**, con la intención de mantener los datos contables versionados y permitir futuras actualizaciones sin cambiar la identidad de la librería.
 
