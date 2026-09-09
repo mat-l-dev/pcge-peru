@@ -43,6 +43,7 @@ select = [
 [dependency-groups]
 dev = [
     "build",
+    "jsonschema>=4.23.0",
     "pre-commit",
     "pytest",
     "ruff==0.16.6",
