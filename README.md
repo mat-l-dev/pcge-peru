@@ -159,7 +159,6 @@ El paquete expone las siguientes clases y funciones públicas principales:
 - **`PCGECatalog`**: Catálogo en memoria indexado por código, con una interfaz pública de consulta de solo lectura. Ofrece acceso por clave, comprobación de pertenencia, iteración en orden documental, conteo de entradas, consultas jerárquicas (`parent`, `children`, `ancestors`, `descendants`) y búsqueda de texto (`search`).
 - **`load_catalog(version="2026")`**: Función de alto nivel que localiza, valida y construye el catálogo a partir de los recursos empaquetados mediante `importlib.resources`.
 - **`PCGEDataError`**: Subclase de `ValueError` emitida ante problemas de lectura de recursos empaquetados, formato JSON mal formado, metadatos incompatibles o inconsistencias estructurales del dataset.
-- **`validate_dataset(entries, metadata)`**: Validador del dataset que comprueba la versión del esquema, los tipos y longitudes admitidos, la ausencia de códigos duplicados, la existencia de los padres, la ausencia de ciclos, la coherencia de prefijos jerárquicos (`parent_code == code[:-1]`) y la correspondencia con el total de entradas indicado en los metadatos.
 
 ### Códigos oficiales de seis dígitos
 

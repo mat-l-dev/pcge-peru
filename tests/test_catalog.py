@@ -172,13 +172,23 @@ def test_multiple_roots_allowed():
     assert cat.parent("3") is None
 
 
-def test_non_prefix_parent_child_relationship_allowed():
+def test_construction_rejects_parent_not_matching_prefix():
     root = PCGEEntry(code="1", name="Activo", parent_code=None)
-    child = PCGEEntry(code="99", name="Cuenta especial", parent_code="1")
-    cat = PCGECatalog([root, child])
+    child = PCGEEntry(code="99", name="Cuenta especial", parent_code="9")
+    with pytest.raises(ValueError, match="does not exist in catalog"):
+        PCGECatalog([root, child])
 
-    assert cat.parent("99") == root
-    assert cat.children("1") == (child,)
+    root9 = PCGEEntry(code="9", name="Raíz 9", parent_code=None)
+    child10 = PCGEEntry(code="10", name="Hijo 10 con padre 9", parent_code="9")
+    with pytest.raises(ValueError, match="expected prefix"):
+        PCGECatalog([root9, child10])
+
+
+def test_construction_rejects_code_length_greater_than_six():
+    e1 = PCGEEntry(code="6", name="Elemento", parent_code=None)
+    e7 = PCGEEntry(code="6551111", name="Sintético 7 dígitos", parent_code="655111")
+    with pytest.raises(ValueError, match="Invalid code length"):
+        PCGECatalog([e1, e7])
 
 
 def test_parent_of_root_is_none(catalog: PCGECatalog):
@@ -392,3 +402,64 @@ def test_catalog_rejects_positional_metadata(sample_entries: list[PCGEEntry]):
     )
     with pytest.raises(TypeError):
         PCGECatalog(sample_entries, meta)  # type: ignore[misc]
+
+
+@pytest.fixture
+def synthetic_hierarchy_1_to_6() -> list[PCGEEntry]:
+    return [
+        PCGEEntry(code="6", name="Sintético Elemento 6", parent_code=None),
+        PCGEEntry(code="65", name="Sintético Cuenta 65", parent_code="6"),
+        PCGEEntry(code="655", name="Sintético Subcuenta 655", parent_code="65"),
+        PCGEEntry(code="6551", name="Sintético Divisionaria 6551", parent_code="655"),
+        PCGEEntry(
+            code="65511",
+            name="Sintético Sub-divisionaria 65511",
+            parent_code="6551",
+        ),
+        PCGEEntry(
+            code="655111",
+            name="Sintético Registro 6 Dígitos 655111",
+            parent_code="65511",
+        ),
+    ]
+
+
+def test_catalog_generator_consumed_once(
+    synthetic_hierarchy_1_to_6: list[PCGEEntry],
+):
+    consumed_count = 0
+
+    def gen():
+        nonlocal consumed_count
+        for item in synthetic_hierarchy_1_to_6:
+            consumed_count += 1
+            yield item
+
+    meta = PCGEMetadata(
+        pcge_version="2026",
+        schema_version=1,
+        dataset_revision=1,
+        entry_count=len(synthetic_hierarchy_1_to_6),
+    )
+    cat = PCGECatalog(gen(), metadata=meta)
+    assert len(cat) == len(synthetic_hierarchy_1_to_6)
+    assert consumed_count == len(synthetic_hierarchy_1_to_6)
+
+
+def test_catalog_six_digit_official_code_without_sixth_pcge_level(
+    synthetic_hierarchy_1_to_6: list[PCGEEntry],
+):
+    entry_6 = synthetic_hierarchy_1_to_6[-1]
+    assert entry_6.code_length == 6
+    assert entry_6.pcge_level is None
+
+    meta = PCGEMetadata(
+        pcge_version="2026",
+        schema_version=1,
+        dataset_revision=1,
+        entry_count=len(synthetic_hierarchy_1_to_6),
+    )
+    cat = PCGECatalog(synthetic_hierarchy_1_to_6, metadata=meta)
+    assert cat["655111"].code == "655111"
+    assert cat["655111"].code_length == 6
+    assert cat["655111"].pcge_level is None

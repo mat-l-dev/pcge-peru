@@ -27,6 +27,11 @@ class PCGECatalog:
                 raise TypeError(
                     f"All elements must be PCGEEntry instances, got {item_type}"
                 )
+            if item.code_length < 1 or item.code_length > 6:
+                raise ValueError(
+                    f"Invalid code length for code '{item.code}': "
+                    f"expected between 1 and 6, got {item.code_length}"
+                )
             if item.code in entries_by_code:
                 raise ValueError(f"Duplicate code found: '{item.code}'")
             entries_list.append(item)
@@ -71,6 +76,17 @@ class PCGECatalog:
                 curr = entries_by_code[curr].parent_code
             for c in chain:
                 visited_status[c] = 2
+
+        for entry in entries_list:
+            if entry.code_length > 1 and entry.parent_code != entry.code[:-1]:
+                raise ValueError(
+                    f"Invalid parent code '{entry.parent_code}' for code "
+                    f"'{entry.code}': expected prefix '{entry.code[:-1]}'"
+                )
+            if entry.code_length == 1 and entry.parent_code is not None:
+                raise ValueError(
+                    f"Root code '{entry.code}' must not have a parent_code"
+                )
 
         self._metadata: PCGEMetadata | None = metadata
         self._entries: dict[str, PCGEEntry] = entries_by_code

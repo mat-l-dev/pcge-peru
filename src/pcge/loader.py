@@ -5,7 +5,6 @@ from pcge.catalog import PCGECatalog
 from pcge.exceptions import PCGEDataError
 from pcge.metadata import PCGEMetadata
 from pcge.models import PCGEEntry
-from pcge.validation import validate_dataset
 
 
 def load_catalog(version: str = "2026") -> PCGECatalog:
@@ -120,6 +119,11 @@ def load_catalog(version: str = "2026") -> PCGECatalog:
             f"Invalid metadata in 'metadata.json' for version '{version}': {err}"
         ) from err
 
+    if metadata.schema_version != 1:
+        raise PCGEDataError(
+            f"Unsupported schema_version: {metadata.schema_version}, expected 1"
+        )
+
     try:
         raw_entries = json.loads(entries_text)
     except json.JSONDecodeError as err:
@@ -182,5 +186,7 @@ def load_catalog(version: str = "2026") -> PCGECatalog:
             ) from err
         entries_list.append(entry)
 
-    validated_entries = validate_dataset(entries_list, metadata)
-    return PCGECatalog(validated_entries, metadata=metadata)
+    try:
+        return PCGECatalog(entries_list, metadata=metadata)
+    except (TypeError, ValueError) as err:
+        raise PCGEDataError(f"Catalog integrity validation failed: {err}") from err

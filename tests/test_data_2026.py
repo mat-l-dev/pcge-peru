@@ -3,7 +3,7 @@ from pathlib import Path
 
 import pytest
 
-from pcge import PCGECatalog, PCGELevel, load_catalog, validate_dataset
+from pcge import PCGECatalog, PCGELevel, load_catalog
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
 
@@ -323,6 +323,7 @@ def test_24_metadata_entry_count_matches_entries_json_length():
     assert metadata_data["entry_count"] == len(entries_data)
 
 
-def test_explicit_catalog_validation_flow(catalog_2026: PCGECatalog):
-    validated = validate_dataset(tuple(catalog_2026), catalog_2026.metadata)
-    assert len(validated) == 1636
+def test_explicit_catalog_reconstruction_flow(catalog_2026: PCGECatalog):
+    reconstructed = PCGECatalog(tuple(catalog_2026), metadata=catalog_2026.metadata)
+    assert len(reconstructed) == 1636
+    assert reconstructed.metadata == catalog_2026.metadata
