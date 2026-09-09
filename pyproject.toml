@@ -8,13 +8,13 @@ version = "0.1.0"
 description = "Librería open source en Python para trabajar con el Plan Contable General Empresarial del Perú."
 readme = "README.md"
 requires-python = ">=3.14,<3.15"
-license = { file = "LICENSE" }
+license = "Apache-2.0"
+license-files = ["LICENSE"]
 keywords = ["accounting", "contabilidad", "pcge", "peru", "plan-contable"]
 classifiers = [
     "Development Status :: 3 - Alpha",
     "Intended Audience :: Developers",
     "Intended Audience :: Financial and Insurance Industry",
-    "License :: OSI Approved :: Apache Software License",
     "Operating System :: OS Independent",
     "Programming Language :: Python :: 3",
     "Programming Language :: Python :: 3.14",
