@@ -1,0 +1,33 @@
+name: Feature request
+description: Propón una nueva funcionalidad
+title: "[Feature]: "
+labels:
+  - enhancement
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problema o necesidad
+      description: ¿Qué problema quieres resolver?
+    validations:
+      required: true
+
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Propuesta
+      description: Describe la funcionalidad que propones.
+    validations:
+      required: true
+
+  - type: textarea
+    id: example
+    attributes:
+      label: Ejemplo de uso
+      description: Si aplica, muestra cómo imaginas que se usaría.
+      render: python
+
+  - type: textarea
+    id: additional
+    attributes:
+      label: Información adicional

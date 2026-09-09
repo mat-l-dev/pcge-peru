@@ -1,0 +1,49 @@
+# Python bytecode
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Virtual environments
+.venv/
+venv/
+env/
+
+# Build / packaging
+build/
+dist/
+*.egg-info/
+.eggs/
+pip-wheel-metadata/
+
+# Testing / coverage
+.pytest_cache/
+.coverage
+.coverage.*
+htmlcov/
+.tox/
+.nox/
+
+# Ruff
+.ruff_cache/
+
+# Type checking
+.mypy_cache/
+.pyright/
+
+# Jupyter
+.ipynb_checkpoints/
+
+# IDE / editors
+.vscode/
+.idea/
+
+# OS
+.DS_Store
+Thumbs.db
+Desktop.ini
+
+# Temporary files
+*.tmp
+*.temp
+*.swp
+*.swo
