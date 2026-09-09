@@ -43,3 +43,19 @@ jobs:
 
       - name: Build package
         run: python -m build
+
+      - name: Verify built wheel installation and data resources
+        run: |
+          WHEEL_PATH=$(ls dist/*.whl | head -n 1)
+          pip install --force-reinstall --no-deps "$WHEEL_PATH"
+          cd "$RUNNER_TEMP"
+          python -c '
+          from pcge import load_catalog
+          catalog = load_catalog("2026")
+          assert len(catalog) == 1636, f"Expected 1636 entries, got {len(catalog)}"
+          assert catalog.metadata is not None, "Metadata must not be None"
+          assert catalog.metadata.pcge_version == "2026", f"Expected version 2026, got {catalog.metadata.pcge_version}"
+          assert "10" in catalog, "Representative entry 10 must exist"
+          assert catalog["10"].name == "EFECTIVO Y EQUIVALENTES AL EFECTIVO", "Representative entry 10 name mismatch"
+          print("Wheel verification succeeded: catalog loaded with 1636 entries from external directory.")
+          '

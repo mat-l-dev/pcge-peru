@@ -1,0 +1,36 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "PCGEEntries",
+  "description": "Schema for PCGE entries dataset file",
+  "type": "array",
+  "items": {
+    "type": "object",
+    "properties": {
+      "code": {
+        "type": "string",
+        "pattern": "^[0-9]{1,6}$"
+      },
+      "name": {
+        "type": "string",
+        "minLength": 1
+      },
+      "parent_code": {
+        "anyOf": [
+          {
+            "type": "string",
+            "pattern": "^[0-9]{1,5}$"
+          },
+          {
+            "type": "null"
+          }
+        ]
+      }
+    },
+    "required": [
+      "code",
+      "name",
+      "parent_code"
+    ],
+    "additionalProperties": false
+  }
+}
