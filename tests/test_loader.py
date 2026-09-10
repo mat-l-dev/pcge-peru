@@ -190,6 +190,110 @@ def test_load_catalog_malformed_json(tmp_path, monkeypatch):
         load_catalog("2026")
 
 
+def test_load_catalog_entries_malformed_json(tmp_path, monkeypatch):
+    version_dir = tmp_path / "2026"
+    version_dir.mkdir()
+    meta_json = {
+        "pcge_version": "2026",
+        "schema_version": 1,
+        "dataset_revision": 1,
+        "entry_count": 0,
+    }
+    (version_dir / "metadata.json").write_text(json.dumps(meta_json), encoding="utf-8")
+    (version_dir / "entries.json").write_text("[invalid_json", encoding="utf-8")
+
+    monkeypatch.setattr("pcge.loader.importlib_resources.files", lambda pkg: tmp_path)
+
+    with pytest.raises(PCGEDataError, match="Malformed JSON in 'entries.json'"):
+        load_catalog("2026")
+
+
+def test_load_catalog_metadata_duplicate_key(tmp_path, monkeypatch):
+    version_dir = tmp_path / "2026"
+    version_dir.mkdir()
+    raw_metadata = """{
+      "pcge_version": "2026",
+      "schema_version": 1,
+      "dataset_revision": 1,
+      "entry_count": 1,
+      "entry_count": 999
+    }"""
+    (version_dir / "metadata.json").write_text(raw_metadata, encoding="utf-8")
+    (version_dir / "entries.json").write_text("[]", encoding="utf-8")
+
+    monkeypatch.setattr("pcge.loader.importlib_resources.files", lambda pkg: tmp_path)
+
+    with pytest.raises(
+        PCGEDataError,
+        match=(
+            r"Duplicate JSON key 'entry_count' in 'metadata\.json' "
+            r"for version '2026'"
+        ),
+    ):
+        load_catalog("2026")
+
+
+def test_load_catalog_entries_duplicate_key(tmp_path, monkeypatch):
+    version_dir = tmp_path / "2026"
+    version_dir.mkdir()
+    meta_json = {
+        "pcge_version": "2026",
+        "schema_version": 1,
+        "dataset_revision": 1,
+        "entry_count": 1,
+    }
+    raw_entries = """[
+      {
+        "code": "1",
+        "code": "9",
+        "name": "Elemento",
+        "parent_code": null
+      }
+    ]"""
+    (version_dir / "metadata.json").write_text(json.dumps(meta_json), encoding="utf-8")
+    (version_dir / "entries.json").write_text(raw_entries, encoding="utf-8")
+
+    monkeypatch.setattr("pcge.loader.importlib_resources.files", lambda pkg: tmp_path)
+
+    with pytest.raises(
+        PCGEDataError,
+        match=r"Duplicate JSON key 'code' in 'entries\.json' for version '2026'",
+    ):
+        load_catalog("2026")
+
+
+def test_load_catalog_nested_object_duplicate_key(tmp_path, monkeypatch):
+    version_dir = tmp_path / "2026"
+    version_dir.mkdir()
+    meta_json = {
+        "pcge_version": "2026",
+        "schema_version": 1,
+        "dataset_revision": 1,
+        "entry_count": 1,
+    }
+    raw_entries = """[
+      {
+        "code": "1",
+        "name": "Elemento",
+        "parent_code": null,
+        "nested": {
+          "tag": "a",
+          "tag": "b"
+        }
+      }
+    ]"""
+    (version_dir / "metadata.json").write_text(json.dumps(meta_json), encoding="utf-8")
+    (version_dir / "entries.json").write_text(raw_entries, encoding="utf-8")
+
+    monkeypatch.setattr("pcge.loader.importlib_resources.files", lambda pkg: tmp_path)
+
+    with pytest.raises(
+        PCGEDataError,
+        match=r"Duplicate JSON key 'tag' in 'entries\.json' for version '2026'",
+    ):
+        load_catalog("2026")
+
+
 def test_load_catalog_metadata_not_object(tmp_path, monkeypatch):
     version_dir = tmp_path / "2026"
     version_dir.mkdir()

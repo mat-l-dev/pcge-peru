@@ -1,10 +1,39 @@
 import importlib.resources as importlib_resources
 import json
+from typing import Any
 
 from pcge.catalog import PCGECatalog
 from pcge.exceptions import PCGEDataError
 from pcge.metadata import PCGEMetadata
 from pcge.models import PCGEEntry
+
+
+class _DuplicateJSONKeyError(ValueError):
+    def __init__(self, key: str) -> None:
+        super().__init__(f"Duplicate JSON key: {key!r}")
+        self.key = key
+
+
+def _reject_duplicate_keys(pairs: list[tuple[str, Any]]) -> dict[str, Any]:
+    result: dict[str, Any] = {}
+    for key, value in pairs:
+        if key in result:
+            raise _DuplicateJSONKeyError(key)
+        result[key] = value
+    return result
+
+
+def _loads_json_strict(text: str, filename: str, version: str) -> Any:
+    try:
+        return json.loads(text, object_pairs_hook=_reject_duplicate_keys)
+    except _DuplicateJSONKeyError as err:
+        raise PCGEDataError(
+            f"Duplicate JSON key '{err.key}' in '{filename}' for version '{version}'"
+        ) from err
+    except json.JSONDecodeError as err:
+        raise PCGEDataError(
+            f"Malformed JSON in '{filename}' for version '{version}': {err}"
+        ) from err
 
 
 def load_catalog(version: str = "2026") -> PCGECatalog:
@@ -57,12 +86,7 @@ def load_catalog(version: str = "2026") -> PCGECatalog:
             f"Failed to decode 'entries.json' as UTF-8 for version '{version}': {err}"
         ) from err
 
-    try:
-        raw_metadata = json.loads(metadata_text)
-    except json.JSONDecodeError as err:
-        raise PCGEDataError(
-            f"Malformed JSON in 'metadata.json' for version '{version}': {err}"
-        ) from err
+    raw_metadata = _loads_json_strict(metadata_text, "metadata.json", version)
 
     if not isinstance(raw_metadata, dict):
         raise PCGEDataError(
@@ -124,12 +148,7 @@ def load_catalog(version: str = "2026") -> PCGECatalog:
             f"Unsupported schema_version: {metadata.schema_version}, expected 1"
         )
 
-    try:
-        raw_entries = json.loads(entries_text)
-    except json.JSONDecodeError as err:
-        raise PCGEDataError(
-            f"Malformed JSON in 'entries.json' for version '{version}': {err}"
-        ) from err
+    raw_entries = _loads_json_strict(entries_text, "entries.json", version)
 
     if not isinstance(raw_entries, list):
         raise PCGEDataError(
