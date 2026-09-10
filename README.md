@@ -237,11 +237,23 @@ La librería distribuye snapshots canónicos e inmutables de los catálogos norm
 - **Procedencia registrada**: Los metadatos de la fuente original, el hash SHA-256 del documento primario y el hash canónico del dataset se conservan en [`src/pcge/data/2026/source.json`](src/pcge/data/2026/source.json).
 - **Anomalías documentadas**: Las inconsistencias editoriales auditadas en la fuente oficial se conservan en [`src/pcge/data/2026/anomalies.json`](src/pcge/data/2026/anomalies.json).
 
-### Verificación de integridad criptográfica y reproducibilidad
+### Integridad y reproducibilidad de los snapshots
 
-Cada snapshot incorpora dos verificaciones criptográficas SHA-256 independientes:
-- **`source_sha256`**: Hash SHA-256 del documento normativo original (archivo PDF emitido por el Estado Peruano), garantizando la trazabilidad hacia el documento primario.
-- **`dataset_sha256`**: Hash SHA-256 canónico del archivo `entries.json` serializado con saltos de línea LF, verificado byte a byte en tiempo de ejecución por `load_catalog` para garantizar la integridad y reproducibilidad estricta del dataset distribuido.
+Cada snapshot registra dos hashes SHA-256 con propósitos distintos:
+
+- **`source_sha256`**: fingerprint SHA-256 del documento normativo fuente
+  utilizado para preparar y auditar el snapshot. El PDF fuente no se distribuye
+  con el paquete, por lo que este valor sirve como referencia de procedencia
+  para compararlo con una copia externa del documento.
+- **`dataset_sha256`**: SHA-256 de los bytes exactos del `entries.json`
+  canónico distribuido. `load_catalog()` recalcula este valor en cada carga y
+  comprueba que coincida con el hash registrado, detectando inconsistencias
+  byte-a-byte dentro del snapshot empaquetado.
+
+Estos hashes facilitan la trazabilidad, la comprobación de integridad y la
+reproducibilidad del dataset. No constituyen por sí solos una firma digital ni
+una garantía de autenticidad frente a la sustitución simultánea de los datos y
+sus hashes.
 
 #### Tratamiento de la anomalía documental 70992 en PCGE 2026
 
