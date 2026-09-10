@@ -147,7 +147,7 @@ def test_17_code_70902_does_not_exist(catalog_2026: PCGECatalog):
 
 
 def test_18_anomaly_documented_in_anomalies_json():
-    anomalies_file = REPO_ROOT / "sources" / "2026" / "anomalies.json"
+    anomalies_file = REPO_ROOT / "src" / "pcge" / "data" / "2026" / "anomalies.json"
     assert anomalies_file.is_file()
     with anomalies_file.open(encoding="utf-8") as f:
         anomalies = json.load(f)
@@ -292,7 +292,7 @@ def test_22_schemas_remain_valid_json():
 
 
 def test_23_source_json_contains_expected_sha256():
-    source_file = REPO_ROOT / "sources" / "2026" / "source.json"
+    source_file = REPO_ROOT / "src" / "pcge" / "data" / "2026" / "source.json"
     assert source_file.is_file()
 
     with source_file.open(encoding="utf-8") as f:

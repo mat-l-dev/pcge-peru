@@ -1,8 +1,10 @@
 import unicodedata
 from collections.abc import Iterable, Iterator
 
+from pcge.anomalies import PCGEAnomaly
 from pcge.metadata import PCGEMetadata
 from pcge.models import PCGEEntry
+from pcge.provenance import PCGEProvenance
 
 
 def _normalize_for_search(text: str) -> str:
@@ -16,6 +18,8 @@ class PCGECatalog:
         entries: Iterable[PCGEEntry],
         *,
         metadata: PCGEMetadata | None = None,
+        provenance: PCGEProvenance | None = None,
+        anomalies: Iterable[PCGEAnomaly] = (),
     ) -> None:
         entries_list: list[PCGEEntry] = []
         entries_by_code: dict[str, PCGEEntry] = {}
@@ -49,6 +53,27 @@ class PCGECatalog:
                     f"metadata.entry_count ({metadata.entry_count}) does not match "
                     f"catalog entry count ({len(entries_list)})"
                 )
+
+        if provenance is not None:
+            if not isinstance(provenance, PCGEProvenance):
+                item_type = type(provenance).__name__
+                raise TypeError(
+                    f"provenance must be PCGEProvenance or None, got {item_type}"
+                )
+
+        anomalies_list: list[PCGEAnomaly] = []
+        seen_anomaly_ids: set[str] = set()
+        for i, a in enumerate(anomalies):
+            if not isinstance(a, PCGEAnomaly):
+                item_type = type(a).__name__
+                raise TypeError(
+                    "All elements in anomalies must be PCGEAnomaly instances, "
+                    f"got {item_type} at index {i}"
+                )
+            if a.id in seen_anomaly_ids:
+                raise ValueError(f"Duplicate anomaly ID found: {a.id!r}")
+            seen_anomaly_ids.add(a.id)
+            anomalies_list.append(a)
 
         for entry in entries_list:
             if entry.parent_code is not None:
@@ -89,6 +114,8 @@ class PCGECatalog:
                 )
 
         self._metadata: PCGEMetadata | None = metadata
+        self._provenance: PCGEProvenance | None = provenance
+        self._anomalies: tuple[PCGEAnomaly, ...] = tuple(anomalies_list)
         self._entries: dict[str, PCGEEntry] = entries_by_code
         self._entries_order: tuple[PCGEEntry, ...] = tuple(entries_list)
         self._children: dict[str, tuple[PCGEEntry, ...]] = {
@@ -98,6 +125,14 @@ class PCGECatalog:
     @property
     def metadata(self) -> PCGEMetadata | None:
         return self._metadata
+
+    @property
+    def provenance(self) -> PCGEProvenance | None:
+        return self._provenance
+
+    @property
+    def anomalies(self) -> tuple[PCGEAnomaly, ...]:
+        return self._anomalies
 
     def __len__(self) -> int:
         return len(self._entries_order)
@@ -182,4 +217,22 @@ class PCGECatalog:
             norm_name = _normalize_for_search(entry.name)
             if norm_query in norm_code or norm_query in norm_name:
                 matches.append(entry)
+        return tuple(matches)
+
+    def anomalies_for(self, code: str) -> tuple[PCGEAnomaly, ...]:
+        if not isinstance(code, str):
+            raise TypeError(f"code must be a str, got {type(code).__name__}")
+        if not code:
+            raise ValueError("code cannot be empty")
+        if not code.strip():
+            raise ValueError("code cannot be whitespace only")
+        if code != code.strip():
+            raise ValueError("code cannot contain surrounding whitespace")
+
+        matches: list[PCGEAnomaly] = []
+        for a in self._anomalies:
+            if code in a.codes or any(
+                occ.printed_code == code for occ in a.occurrences
+            ):
+                matches.append(a)
         return tuple(matches)
