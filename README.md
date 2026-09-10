@@ -14,7 +14,7 @@ El propósito de `pcge-peru` es brindar una representación tipada y programáti
 
 ## Estado del proyecto
 
-El proyecto se encuentra en **etapa de desarrollo inicial** (`v0.1.0`). La API pública puede recibir ajustes y mejoras antes de alcanzar una versión de estabilidad definitiva.
+El proyecto se encuentra en **etapa de desarrollo inicial** (`v0.2.0`). La API pública puede recibir ajustes y mejoras antes de alcanzar una versión de estabilidad definitiva.
 
 El paquete se encuentra disponible públicamente en [PyPI](https://pypi.org/project/pcge-peru/).
 
