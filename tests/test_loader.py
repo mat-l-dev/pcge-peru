@@ -1,9 +1,10 @@
+import inspect
 import json
 
 import pytest
 
 from pcge.exceptions import PCGEDataError
-from pcge.loader import load_catalog
+from pcge.loader import available_versions, load_catalog
 
 
 def test_load_catalog_valid_simulated_resources(tmp_path, monkeypatch):
@@ -36,31 +37,28 @@ def test_load_catalog_valid_simulated_resources(tmp_path, monkeypatch):
     assert cat.metadata.entry_count == 2
 
 
-def test_load_catalog_default_version(tmp_path, monkeypatch):
-    version_dir = tmp_path / "2026"
-    version_dir.mkdir()
+def test_load_catalog_missing_version_raises_type_error():
+    with pytest.raises(TypeError):
+        load_catalog()  # type: ignore[call-arg]
 
-    meta_json = {
-        "pcge_version": "2026",
-        "schema_version": 1,
-        "dataset_revision": 1,
-        "entry_count": 1,
-    }
-    entries_json = [
-        {"code": "1", "name": "Activo", "parent_code": None},
-    ]
 
-    (version_dir / "metadata.json").write_text(json.dumps(meta_json), encoding="utf-8")
-    (version_dir / "entries.json").write_text(
-        json.dumps(entries_json), encoding="utf-8"
-    )
+def test_load_catalog_signature_has_no_default():
+    signature = inspect.signature(load_catalog)
+    assert signature.parameters["version"].default is inspect.Parameter.empty
 
-    monkeypatch.setattr("pcge.loader.importlib_resources.files", lambda pkg: tmp_path)
 
-    # Calling without arguments defaults to version 2026
-    cat = load_catalog()
-    assert len(cat) == 1
-    assert cat["1"].name == "Activo"
+def test_available_versions_returns_tuple():
+    versions = available_versions()
+    assert versions == ("2019", "2026")
+    assert isinstance(versions, tuple)
+
+
+def test_available_versions_independent_of_resources(monkeypatch):
+    def fake_files(_):
+        raise RuntimeError("Resources should not be accessed")
+
+    monkeypatch.setattr("pcge.loader.importlib_resources.files", fake_files)
+    assert available_versions() == ("2019", "2026")
 
 
 def test_load_catalog_independent_of_working_directory(tmp_path, monkeypatch):
@@ -125,8 +123,33 @@ def test_load_catalog_invalid_version_characters(invalid_version):
 
 
 def test_load_catalog_unavailable_version():
-    with pytest.raises(PCGEDataError, match="not available"):
+    with pytest.raises(PCGEDataError) as exc_info:
         load_catalog("9999")
+    msg = str(exc_info.value)
+    assert "9999" in msg
+    assert "2019" in msg
+    assert "2026" in msg
+
+
+def test_load_catalog_unsupported_version_rejected_before_resource_access(
+    monkeypatch,
+):
+    def fake_files(_):
+        raise RuntimeError("Resources should not be accessed")
+
+    monkeypatch.setattr("pcge.loader.importlib_resources.files", fake_files)
+    with pytest.raises(PCGEDataError, match="Version '9999' is not available"):
+        load_catalog("9999")
+
+
+def test_load_catalog_real_2019_integration():
+    cat = load_catalog("2019")
+    assert len(cat) == 1757
+    assert cat.metadata is not None
+    assert cat.metadata.pcge_version == "2019"
+    assert cat.metadata.schema_version == 1
+    assert cat.metadata.dataset_revision == 1
+    assert cat.metadata.entry_count == 1757
 
 
 def test_load_catalog_real_2026_integration():
@@ -137,11 +160,6 @@ def test_load_catalog_real_2026_integration():
     assert cat.metadata.schema_version == 1
     assert cat.metadata.dataset_revision == 1
     assert cat.metadata.entry_count == 1636
-
-    # Default call without argument loads the same 2026 catalog
-    cat_default = load_catalog()
-    assert len(cat_default) == 1636
-    assert cat_default.metadata == cat.metadata
 
     # Confirm tuple(catalog) preserves documentary order
     import importlib.resources as importlib_resources
@@ -565,3 +583,17 @@ def test_load_catalog_entry_count_mismatch_wrapped_in_data_error(tmp_path, monke
 
     with pytest.raises(PCGEDataError, match="metadata.entry_count"):
         load_catalog("2026")
+
+
+def test_available_versions_matches_packaged_resource_directories():
+    import importlib.resources as importlib_resources
+
+    resources = importlib_resources.files("pcge.data")
+    versions = tuple(
+        sorted(
+            child.name
+            for child in resources.iterdir()
+            if child.is_dir() and child.name.isascii() and child.name.isdigit()
+        )
+    )
+    assert versions == available_versions()
