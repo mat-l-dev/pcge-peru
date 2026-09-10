@@ -9,6 +9,7 @@ from jsonschema.exceptions import ValidationError
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
 SCHEMAS_DIR = REPO_ROOT / "schemas"
+DATA_2019_DIR = REPO_ROOT / "src" / "pcge" / "data" / "2019"
 DATA_2026_DIR = REPO_ROOT / "src" / "pcge" / "data" / "2026"
 
 
@@ -60,6 +61,29 @@ def test_packaged_metadata_2026_conforms_to_schema(
     metadata_validator: Draft202012Validator,
 ):
     metadata_path = DATA_2026_DIR / "metadata.json"
+    with metadata_path.open(encoding="utf-8") as f:
+        metadata_data = json.load(f)
+
+    assert isinstance(metadata_data, dict)
+    metadata_validator.validate(metadata_data)
+
+
+def test_packaged_entries_2019_conforms_to_schema(
+    entries_validator: Draft202012Validator,
+):
+    entries_path = DATA_2019_DIR / "entries.json"
+    with entries_path.open(encoding="utf-8") as f:
+        entries_data = json.load(f)
+
+    assert isinstance(entries_data, list)
+    assert len(entries_data) == 1757
+    entries_validator.validate(entries_data)
+
+
+def test_packaged_metadata_2019_conforms_to_schema(
+    metadata_validator: Draft202012Validator,
+):
+    metadata_path = DATA_2019_DIR / "metadata.json"
     with metadata_path.open(encoding="utf-8") as f:
         metadata_data = json.load(f)
 

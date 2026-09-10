@@ -17,6 +17,8 @@ def verify_wheel(wheel_path: Path) -> None:
 
         required_entries = [
             "pcge/py.typed",
+            "pcge/data/2019/entries.json",
+            "pcge/data/2019/metadata.json",
             "pcge/data/2026/entries.json",
             "pcge/data/2026/metadata.json",
         ]
@@ -62,9 +64,13 @@ def verify_sdist(sdist_path: Path) -> None:
             "pyproject.toml",
             "schemas/entries.schema.json",
             "schemas/metadata.schema.json",
+            "sources/2019/source.json",
+            "sources/2019/anomalies.json",
             "sources/2026/source.json",
             "sources/2026/anomalies.json",
             "src/pcge/py.typed",
+            "src/pcge/data/2019/entries.json",
+            "src/pcge/data/2019/metadata.json",
             "src/pcge/data/2026/entries.json",
             "src/pcge/data/2026/metadata.json",
         ]
@@ -124,12 +130,22 @@ def verify_build_from_sdist(sdist_path: Path) -> None:
             (
                 "import importlib.resources as importlib_resources\n"
                 "from pcge import load_catalog\n\n"
-                'catalog = load_catalog("2026")\n'
-                'assert len(catalog) == 1636, f"Expected 1636, got {len(catalog)}"\n'
-                "assert catalog.metadata is not None\n"
-                'assert catalog.metadata.pcge_version == "2026"\n'
-                'assert "10" in catalog\n'
-                'assert catalog["10"].name == "EFECTIVO Y EQUIVALENTES AL EFECTIVO"\n\n'
+                'cat_2019 = load_catalog("2019")\n'
+                'assert len(cat_2019) == 1757, f"Expected 1757, got {len(cat_2019)}"\n'
+                "assert cat_2019.metadata is not None\n"
+                'assert cat_2019.metadata.pcge_version == "2019"\n'
+                'assert "10" in cat_2019\n'
+                'assert cat_2019["10"].name == (\n'
+                '    "EFECTIVO Y EQUIVALENTES DE EFECTIVO"\n'
+                ")\n\n"
+                'cat_2026 = load_catalog("2026")\n'
+                'assert len(cat_2026) == 1636, f"Expected 1636, got {len(cat_2026)}"\n'
+                "assert cat_2026.metadata is not None\n"
+                'assert cat_2026.metadata.pcge_version == "2026"\n'
+                'assert "10" in cat_2026\n'
+                'assert cat_2026["10"].name == (\n'
+                '    "EFECTIVO Y EQUIVALENTES AL EFECTIVO"\n'
+                ")\n\n"
                 'pkg_files = importlib_resources.files("pcge")\n'
                 'assert pkg_files.joinpath("py.typed").is_file()\n'
                 'print("Smoke test on sdist-built wheel passed successfully.")\n'
