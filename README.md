@@ -7,7 +7,7 @@ El propósito de `pcge-peru` es brindar una representación tipada y programáti
 > **Alcance del proyecto**:
 > - `pcge-peru` **no es un ERP**.
 > - No implementa asientos contables, libro diario, mayor, cálculo de impuestos ni facturación electrónica.
-> - La versión actual se enfoca exclusivamente en el catálogo de cuentas del **Capítulo II** del PCGE 2026.
+> - El proyecto se enfoca exclusivamente en el catálogo de cuentas del **Capítulo II** de los planes contables soportados (snapshots para PCGE 2019 y PCGE 2026).
 > - El **Capítulo III** (dinámica contable, descripciones narrativas y comentarios por cuenta) no forma parte del modelo público en esta versión.
 
 ---
@@ -76,6 +76,10 @@ from pcge import load_catalog
 
 # Carga la versión por defecto ("2026")
 catalog = load_catalog()
+
+# También es posible cargar explícitamente una versión específica:
+catalog_2019 = load_catalog("2019")
+catalog_2026 = load_catalog("2026")
 
 # 1. Longitud del catálogo
 print(len(catalog))
@@ -165,12 +169,14 @@ El paquete expone las siguientes clases y funciones públicas principales:
   - `SUBDIVISIONARY` (5 dígitos)
 - **`PCGEMetadata`**: Modelo inmutable con la información de versión y revisión del dataset (`pcge_version`, `schema_version`, `dataset_revision`, `entry_count`).
 - **`PCGECatalog`**: Catálogo en memoria indexado por código, con una interfaz pública de consulta de solo lectura. Ofrece acceso por clave, comprobación de pertenencia, iteración en orden documental, conteo de entradas, consultas jerárquicas (`parent`, `children`, `ancestors`, `descendants`) y búsqueda de texto (`search`).
-- **`load_catalog(version="2026")`**: Función de alto nivel que localiza, valida y construye el catálogo a partir de los recursos empaquetados mediante `importlib.resources`.
+- **`load_catalog(version="2026")`**: Función de alto nivel que localiza, valida y construye el catálogo a partir de los recursos empaquetados mediante `importlib.resources`. Permite cargar tanto `"2019"` como `"2026"` (versión por defecto).
 - **`PCGEDataError`**: Subclase de `ValueError` emitida ante problemas de lectura de recursos empaquetados, formato JSON mal formado, metadatos incompatibles o inconsistencias estructurales del dataset.
 
 ### Códigos oficiales de seis dígitos
 
-El PCGE 2026 incluye doce códigos oficiales de seis dígitos (`655111` a `655162`). Son desgloses de *Operación* e *Inversión* subordinados a los códigos `65511` a `65516`, dentro del costo neto de enajenación de activos inmovilizados.
+Tanto el PCGE 2019 como el PCGE 2026 incluyen códigos oficiales de seis dígitos en sus catálogos impresos:
+- En **PCGE 2019**: se preservan 20 detalles oficiales de seis dígitos, concentrados en las cuentas 682 y 683, relacionados con la depreciación de activos por derecho de uso.
+- En **PCGE 2026**: se incluyen 12 códigos oficiales (`655111` a `655162`), correspondientes a desgloses de *Operación* e *Inversión* subordinados al costo neto de enajenación de activos inmovilizados.
 
 En el modelo de `pcge-peru`:
 - Se preservan con su código completo de seis dígitos.
@@ -180,9 +186,21 @@ En el modelo de `pcge-peru`:
 
 ---
 
-## Dataset y procedencia
+## Datasets y procedencia
 
-El catálogo integrado corresponde a la actualización oficial del Plan Contable General Empresarial publicada en 2026:
+La librería distribuye snapshots canónicos e inmutables de los catálogos normativos del Plan Contable General Empresarial emitidos por el Consejo Normativo de Contabilidad (CNC). Cada consumidor es responsable de seleccionar la versión del catálogo contable correspondiente a sus requerimientos operativos o de auditoría.
+
+### PCGE 2019
+
+- **Cantidad de entradas**: 1,757 entradas canónicas.
+- **Alcance documental**: Capítulo II (Catálogo de Cuentas), páginas PDF 21 a 62 (numeración impresa 20 a 61).
+- **Autoridad normativa**: Consejo Normativo de Contabilidad (CNC).
+- **Dispositivo legal**: [Resolución N.° 002-2019-EF/30](https://busquedas.elperuano.pe/dispositivo/NL/1772236-1), emitida el 16 de mayo de 2019 y publicada el 24 de mayo de 2019 en el Diario Oficial El Peruano.
+- **Vigencia obligatoria**: A partir del 01 de enero de 2020.
+- **Procedencia registrada**: Los metadatos de la fuente original y el hash SHA-256 del documento primario se conservan en [`sources/2019/source.json`](sources/2019/source.json).
+- **Anomalías documentadas**: Las inconsistencias editoriales auditadas en la fuente oficial (grupos A a I) y los criterios canónicos aplicados están documentados formalmente en [`sources/2019/anomalies.json`](sources/2019/anomalies.json).
+
+### PCGE 2026
 
 - **Cantidad de entradas**: 1,636 entradas canónicas.
 - **Alcance documental**: Capítulo II (Catálogo de Cuentas), páginas PDF 19 a 52 (numeración impresa 17 a 50).
@@ -191,7 +209,7 @@ El catálogo integrado corresponde a la actualización oficial del Plan Contable
 - **Vigencia obligatoria**: A partir del 01 de enero de 2028 (con aplicación anticipada permitida).
 - **Procedencia registrada**: Los metadatos de la fuente original y el hash SHA-256 del documento primario se conservan en [`sources/2026/source.json`](sources/2026/source.json).
 
-### Tratamiento de la anomalía documental 70992
+#### Tratamiento de la anomalía documental 70992 en PCGE 2026
 
 En el documento oficial impreso se detectó una doble aparición del código `70992`:
 
