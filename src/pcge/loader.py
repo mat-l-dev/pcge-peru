@@ -36,7 +36,14 @@ def _loads_json_strict(text: str, filename: str, version: str) -> Any:
         ) from err
 
 
-def load_catalog(version: str = "2026") -> PCGECatalog:
+_SUPPORTED_VERSIONS: tuple[str, ...] = ("2019", "2026")
+
+
+def available_versions() -> tuple[str, ...]:
+    return _SUPPORTED_VERSIONS
+
+
+def load_catalog(version: str) -> PCGECatalog:
     if not isinstance(version, str):
         item_type = type(version).__name__
         raise TypeError(f"version must be a str, got {item_type}")
@@ -44,6 +51,11 @@ def load_catalog(version: str = "2026") -> PCGECatalog:
         raise PCGEDataError("version cannot be empty")
     if not (version.isascii() and version.isdigit()):
         raise PCGEDataError(f"version must contain only ASCII digits, got {version!r}")
+    if version not in _SUPPORTED_VERSIONS:
+        available = ", ".join(_SUPPORTED_VERSIONS)
+        raise PCGEDataError(
+            f"Version '{version}' is not available. Available versions: {available}"
+        )
 
     try:
         data_pkg = importlib_resources.files("pcge.data")

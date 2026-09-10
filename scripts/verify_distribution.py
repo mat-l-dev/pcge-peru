@@ -129,7 +129,8 @@ def verify_build_from_sdist(sdist_path: Path) -> None:
         smoke_script.write_text(
             (
                 "import importlib.resources as importlib_resources\n"
-                "from pcge import load_catalog\n\n"
+                "from pcge import available_versions, load_catalog\n\n"
+                'assert available_versions() == ("2019", "2026")\n\n'
                 'cat_2019 = load_catalog("2019")\n'
                 'assert len(cat_2019) == 1757, f"Expected 1757, got {len(cat_2019)}"\n'
                 "assert cat_2019.metadata is not None\n"

@@ -69,17 +69,20 @@ pip install --group dev
 
 ## Inicio rápido
 
-La función principal para comenzar es `load_catalog`, que carga el catálogo oficial empaquetado como un objeto `PCGECatalog` con una interfaz pública de consulta de solo lectura:
+La función principal para comenzar es `load_catalog`, que carga el catálogo oficial empaquetado como un objeto `PCGECatalog` con una interfaz pública de consulta de solo lectura. Dado que cada snapshot representa una edición normativa distinta, la versión debe indicarse siempre de forma explícita:
 
 ```python
-from pcge import load_catalog
+from pcge import available_versions, load_catalog
 
-# Carga la versión por defecto ("2026")
-catalog = load_catalog()
+# Listar las versiones normativas disponibles
+print(available_versions())
+# ("2019", "2026")
 
-# También es posible cargar explícitamente una versión específica:
+# Cargar explícitamente la versión requerida
+catalog = load_catalog("2026")
+
+# O cargar la versión 2019:
 catalog_2019 = load_catalog("2019")
-catalog_2026 = load_catalog("2026")
 
 # 1. Longitud del catálogo
 print(len(catalog))
@@ -149,6 +152,7 @@ print(meta.entry_count)  # 1636
 
 ### Reglas clave de uso
 
+- **Selección explícita de versión obligatoria**: La función `load_catalog(version)` requiere indicar explícitamente la versión a cargar (`"2019"` o `"2026"`). Dado que cada snapshot corresponde a una norma contable distinta, la librería no asume ninguna versión por defecto.
 - **Códigos como cadenas de texto (`str`)**: Los códigos contables se manejan siempre como `str` (por ejemplo, `"10"`, `"101"`), nunca como enteros `int`.
 - **Manejo de códigos inexistentes**: `catalog[code]` lanza `KeyError` si el código no forma parte del catálogo. Para evitar excepciones, utilice `catalog.get(code)` o la verificación `"code" in catalog`.
 - **Estructuras inmutables**: `catalog.children()`, `catalog.ancestors()` y `catalog.descendants()` devuelven tuplas inmutables (`tuple[PCGEEntry, ...]`).
@@ -169,7 +173,8 @@ El paquete expone las siguientes clases y funciones públicas principales:
   - `SUBDIVISIONARY` (5 dígitos)
 - **`PCGEMetadata`**: Modelo inmutable con la información de versión y revisión del dataset (`pcge_version`, `schema_version`, `dataset_revision`, `entry_count`).
 - **`PCGECatalog`**: Catálogo en memoria indexado por código, con una interfaz pública de consulta de solo lectura. Ofrece acceso por clave, comprobación de pertenencia, iteración en orden documental, conteo de entradas, consultas jerárquicas (`parent`, `children`, `ancestors`, `descendants`) y búsqueda de texto (`search`).
-- **`load_catalog(version="2026")`**: Función de alto nivel que localiza, valida y construye el catálogo a partir de los recursos empaquetados mediante `importlib.resources`. Permite cargar tanto `"2019"` como `"2026"` (versión por defecto).
+- **`available_versions()`**: Función que retorna una tupla inmutable con las versiones normativas soportadas en el paquete (`("2019", "2026")`).
+- **`load_catalog(version)`**: Función de alto nivel que localiza, valida y construye el catálogo para la versión solicitada (`str` obligatorio) a partir de los recursos empaquetados mediante `importlib.resources`.
 - **`PCGEDataError`**: Subclase de `ValueError` emitida ante problemas de lectura de recursos empaquetados, formato JSON mal formado, metadatos incompatibles o inconsistencias estructurales del dataset.
 
 ### Códigos oficiales de seis dígitos
