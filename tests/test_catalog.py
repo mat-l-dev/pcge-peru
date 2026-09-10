@@ -1,6 +1,15 @@
+from datetime import date
+
 import pytest
 
-from pcge import PCGECatalog, PCGEEntry, PCGEMetadata
+from pcge import (
+    PCGEAnomaly,
+    PCGEAnomalyOccurrence,
+    PCGECatalog,
+    PCGEEntry,
+    PCGEMetadata,
+    PCGEProvenance,
+)
 
 
 @pytest.fixture
@@ -463,3 +472,182 @@ def test_catalog_six_digit_official_code_without_sixth_pcge_level(
     assert cat["655111"].code == "655111"
     assert cat["655111"].code_length == 6
     assert cat["655111"].pcge_level is None
+
+
+def test_catalog_default_provenance_and_anomalies(sample_entries):
+    cat = PCGECatalog(sample_entries)
+    assert cat.provenance is None
+    assert cat.anomalies == ()
+
+
+def test_catalog_with_provenance(sample_entries):
+    prov = PCGEProvenance(
+        title="Plan Contable General Empresarial Modificado 2019",
+        authority="Consejo Normativo de Contabilidad",
+        resolution="Resolución N.° 002-2019-EF/30",
+        resolution_date=date(2019, 5, 16),
+        publication_date=date(2019, 5, 24),
+        mandatory_effective_date=date(2020, 1, 1),
+        resolution_url="https://busquedas.elperuano.pe/dispositivo/NL/1772236-1",
+        source_filename="PCGE_2019.pdf",
+        source_sha256="EC0CA9D36CD2F5CDB6D14ECB45A6E510879DF929372FDB033BC2DF88329EB9F2",
+        catalog_chapter="Capítulo II",
+        catalog_pdf_pages=(21, 62),
+        catalog_printed_pages=(20, 61),
+        dataset_sha256="FC70E43B94D0718373AB3B9F81202731E5295EDEDF0DF75231A2FFB3C2BEEC04",
+    )
+    cat = PCGECatalog(sample_entries, provenance=prov)
+    assert cat.provenance is prov
+
+
+def test_catalog_invalid_provenance_type(sample_entries):
+    with pytest.raises(TypeError, match="provenance must be PCGEProvenance"):
+        PCGECatalog(sample_entries, provenance="not_a_provenance")  # type: ignore[arg-type]
+
+
+def test_catalog_with_anomalies(sample_entries):
+    occ = PCGEAnomalyOccurrence(
+        occurrence_index=1,
+        pdf_page=48,
+        printed_page=46,
+        printed_code="70992",
+        printed_name="Relacionadas",
+        printed_parent_code="7090",
+        disposition="excluded_from_canonical_catalog",
+    )
+    anom = PCGEAnomaly(
+        id="ANOMALY-1",
+        type="duplicate_code",
+        codes=("70992",),
+        status="unresolved_source_anomaly",
+        description="desc",
+        decision="dec",
+        confirmation_no_invented_code="conf",
+        occurrences=(occ,),
+    )
+    cat = PCGECatalog(sample_entries, anomalies=[anom])
+    assert cat.anomalies == (anom,)
+
+
+def test_catalog_invalid_anomalies_element(sample_entries):
+    with pytest.raises(TypeError, match="PCGEAnomaly instances"):
+        PCGECatalog(sample_entries, anomalies=["invalid_item"])  # type: ignore[list-item]
+
+
+def test_catalog_duplicate_anomaly_id(sample_entries):
+    occ = PCGEAnomalyOccurrence(
+        occurrence_index=1,
+        pdf_page=48,
+        printed_page=46,
+        printed_code="70992",
+        printed_name="Relacionadas",
+        printed_parent_code="7090",
+        disposition="excluded_from_canonical_catalog",
+    )
+    anom1 = PCGEAnomaly(
+        id="DUP-ID",
+        type="duplicate_code",
+        codes=("70992",),
+        status="unresolved_source_anomaly",
+        description="desc",
+        decision="dec",
+        confirmation_no_invented_code="conf",
+        occurrences=(occ,),
+    )
+    anom2 = PCGEAnomaly(
+        id="DUP-ID",
+        type="duplicate_code",
+        codes=("101",),
+        status="unresolved_source_anomaly",
+        description="desc2",
+        decision="dec2",
+        confirmation_no_invented_code="conf2",
+        occurrences=(occ,),
+    )
+    with pytest.raises(ValueError, match="Duplicate anomaly ID"):
+        PCGECatalog(sample_entries, anomalies=[anom1, anom2])
+
+
+def test_catalog_anomalies_for_behavior(sample_entries):
+    occ1 = PCGEAnomalyOccurrence(
+        occurrence_index=1,
+        pdf_page=48,
+        printed_page=46,
+        printed_code="99991",
+        printed_name="Test Printed",
+        printed_parent_code="999",
+        disposition="excluded_from_canonical_catalog",
+    )
+    anom1 = PCGEAnomaly(
+        id="ANOM-1",
+        type="test_type",
+        codes=("101", "99991"),
+        status="test_status",
+        description="desc",
+        decision="dec",
+        confirmation_no_invented_code="conf",
+        occurrences=(occ1,),
+    )
+    occ2 = PCGEAnomalyOccurrence(
+        occurrence_index=1,
+        pdf_page=50,
+        printed_page=48,
+        printed_code="88881",
+        printed_name="Test Printed 2",
+        printed_parent_code="888",
+        disposition="excluded_from_canonical_catalog",
+    )
+    anom2 = PCGEAnomaly(
+        id="ANOM-2",
+        type="test_type",
+        codes=("102",),
+        status="test_status",
+        description="desc2",
+        decision="dec2",
+        confirmation_no_invented_code="conf2",
+        occurrences=(occ2,),
+    )
+    cat = PCGECatalog(sample_entries, anomalies=[anom1, anom2])
+
+    # Match by code
+    res_101 = cat.anomalies_for("101")
+    assert isinstance(res_101, tuple)
+    assert res_101 == (anom1,)
+
+    # Match by code and occurrence simultaneously -> returned exactly once
+    res_99991 = cat.anomalies_for("99991")
+    assert res_99991 == (anom1,)
+
+    # Match by occurrence only (code not in codes)
+    res_88881 = cat.anomalies_for("88881")
+    assert res_88881 == (anom2,)
+
+    # Code does not exist in entries, but matches occurrence
+    assert "88881" not in cat
+    assert cat.anomalies_for("88881") == (anom2,)
+
+    # No match
+    assert cat.anomalies_for("1") == ()
+
+    # No hierarchical matching: neither ancestor nor descendant matches
+    assert cat.anomalies_for("10") == ()
+    assert cat.anomalies_for("1011") == ()
+    assert cat.anomalies_for("9999") == ()
+
+
+@pytest.mark.parametrize("invalid_code", [123, None, ["101"]])
+def test_catalog_anomalies_for_invalid_type(catalog, invalid_code):
+    with pytest.raises(TypeError, match="code must be a str"):
+        catalog.anomalies_for(invalid_code)
+
+
+@pytest.mark.parametrize("invalid_code", ["", "   ", "\t"])
+def test_catalog_anomalies_for_empty_or_whitespace(catalog, invalid_code):
+    with pytest.raises(ValueError):
+        catalog.anomalies_for(invalid_code)
+
+
+@pytest.mark.parametrize("whitespace_code", [" 101", "101 ", " 101 "])
+def test_catalog_anomalies_for_rejects_surrounding_whitespace(catalog, whitespace_code):
+    with pytest.raises(ValueError, match="surrounding whitespace"):
+        catalog.anomalies_for(whitespace_code)

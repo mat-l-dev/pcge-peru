@@ -148,6 +148,25 @@ for res in results:
 meta = catalog.metadata
 print(meta.pcge_version)  # 2026
 print(meta.entry_count)  # 1636
+
+# 11. Procedencia normativa del catálogo
+prov = catalog.provenance
+print(prov.authority)  # Consejo Normativo de Contabilidad
+print(prov.resolution)  # Resolución N.° 002-2026-EF/30
+print(prov.mandatory_effective_date)  # 2028-01-01
+print(prov.source_sha256)  # Hash SHA-256 del documento normativo original
+print(
+    prov.dataset_sha256
+)  # Hash SHA-256 canónico del dataset empaquetado (verificado en carga)
+
+# 12. Anomalías documentales auditadas
+for anomaly in catalog.anomalies:
+    print(f"[{anomaly.id}] {anomaly.type} ({anomaly.status})")
+
+# Consultar anomalías asociadas a un código contable específico
+anomalies_709 = catalog.anomalies_for("70992")
+for a in anomalies_709:
+    print(a.id, a.description)
 ```
 
 ### Reglas clave de uso
@@ -172,7 +191,10 @@ El paquete expone las siguientes clases y funciones públicas principales:
   - `DIVISIONARY` (4 dígitos)
   - `SUBDIVISIONARY` (5 dígitos)
 - **`PCGEMetadata`**: Modelo inmutable con la información de versión y revisión del dataset (`pcge_version`, `schema_version`, `dataset_revision`, `entry_count`).
-- **`PCGECatalog`**: Catálogo en memoria indexado por código, con una interfaz pública de consulta de solo lectura. Ofrece acceso por clave, comprobación de pertenencia, iteración en orden documental, conteo de entradas, consultas jerárquicas (`parent`, `children`, `ancestors`, `descendants`) y búsqueda de texto (`search`).
+- **`PCGEProvenance`**: Modelo inmutable (`frozen`, `slots`) que representa la procedencia y respaldo documental normativo del snapshot (`title`, `authority`, `resolution`, `resolution_date`, `publication_date`, `mandatory_effective_date`, `resolution_url`, `source_filename`, `source_sha256`, `catalog_chapter`, `catalog_pdf_pages`, `catalog_printed_pages`, `dataset_sha256`).
+- **`PCGEAnomaly`**: Modelo inmutable (`frozen`, `slots`) que documenta una anomalía editorial oficial auditada (`id`, `type`, `codes`, `status`, `description`, `decision`, `confirmation_no_invented_code`, `occurrences`).
+- **`PCGEAnomalyOccurrence`**: Modelo inmutable (`frozen`, `slots`) que describe una aparición textual dentro del documento oficial (`occurrence_index`, `pdf_page`, `printed_page`, `printed_code`, `printed_name`, `printed_parent_code`, `disposition`).
+- **`PCGECatalog`**: Catálogo en memoria indexado por código, con una interfaz pública de consulta de solo lectura. Ofrece acceso por clave, comprobación de pertenencia, iteración en orden documental, conteo de entradas, consultas jerárquicas (`parent`, `children`, `ancestors`, `descendants`), búsqueda de texto (`search`), metadatos (`metadata`), procedencia (`provenance`), anomalías globales (`anomalies`) y consulta de anomalías por código (`anomalies_for`).
 - **`available_versions()`**: Función que retorna una tupla inmutable con las versiones normativas soportadas en el paquete (`("2019", "2026")`).
 - **`load_catalog(version)`**: Función de alto nivel que localiza, valida y construye el catálogo para la versión solicitada (`str` obligatorio) a partir de los recursos empaquetados mediante `importlib.resources`.
 - **`PCGEDataError`**: Subclase de `ValueError` emitida ante problemas de lectura de recursos empaquetados, formato JSON mal formado, metadatos incompatibles o inconsistencias estructurales del dataset.
@@ -202,8 +224,8 @@ La librería distribuye snapshots canónicos e inmutables de los catálogos norm
 - **Autoridad normativa**: Consejo Normativo de Contabilidad (CNC).
 - **Dispositivo legal**: [Resolución N.° 002-2019-EF/30](https://busquedas.elperuano.pe/dispositivo/NL/1772236-1), emitida el 16 de mayo de 2019 y publicada el 24 de mayo de 2019 en el Diario Oficial El Peruano.
 - **Vigencia obligatoria**: A partir del 01 de enero de 2020.
-- **Procedencia registrada**: Los metadatos de la fuente original y el hash SHA-256 del documento primario se conservan en [`sources/2019/source.json`](sources/2019/source.json).
-- **Anomalías documentadas**: Las inconsistencias editoriales auditadas en la fuente oficial (grupos A a I) y los criterios canónicos aplicados están documentados formalmente en [`sources/2019/anomalies.json`](sources/2019/anomalies.json).
+- **Procedencia registrada**: Los metadatos de la fuente original, el hash SHA-256 del documento primario y el hash canónico del dataset se conservan en [`src/pcge/data/2019/source.json`](src/pcge/data/2019/source.json).
+- **Anomalías documentadas**: Las inconsistencias editoriales auditadas en la fuente oficial (grupos A a I) y los criterios canónicos aplicados están documentados formalmente en [`src/pcge/data/2019/anomalies.json`](src/pcge/data/2019/anomalies.json).
 
 ### PCGE 2026
 
@@ -212,7 +234,26 @@ La librería distribuye snapshots canónicos e inmutables de los catálogos norm
 - **Autoridad normativa**: Consejo Normativo de Contabilidad (CNC).
 - **Dispositivo legal**: [Resolución N.° 002-2026-EF/30](https://busquedas.elperuano.pe/dispositivo/NL/2550786-1), publicada el 04 de septiembre de 2026 en el Diario Oficial El Peruano.
 - **Vigencia obligatoria**: A partir del 01 de enero de 2028 (con aplicación anticipada permitida).
-- **Procedencia registrada**: Los metadatos de la fuente original y el hash SHA-256 del documento primario se conservan en [`sources/2026/source.json`](sources/2026/source.json).
+- **Procedencia registrada**: Los metadatos de la fuente original, el hash SHA-256 del documento primario y el hash canónico del dataset se conservan en [`src/pcge/data/2026/source.json`](src/pcge/data/2026/source.json).
+- **Anomalías documentadas**: Las inconsistencias editoriales auditadas en la fuente oficial se conservan en [`src/pcge/data/2026/anomalies.json`](src/pcge/data/2026/anomalies.json).
+
+### Integridad y reproducibilidad de los snapshots
+
+Cada snapshot registra dos hashes SHA-256 con propósitos distintos:
+
+- **`source_sha256`**: fingerprint SHA-256 del documento normativo fuente
+  utilizado para preparar y auditar el snapshot. El PDF fuente no se distribuye
+  con el paquete, por lo que este valor sirve como referencia de procedencia
+  para compararlo con una copia externa del documento.
+- **`dataset_sha256`**: SHA-256 de los bytes exactos del `entries.json`
+  canónico distribuido. `load_catalog()` recalcula este valor en cada carga y
+  comprueba que coincida con el hash registrado, detectando inconsistencias
+  byte-a-byte dentro del snapshot empaquetado.
+
+Estos hashes facilitan la trazabilidad, la comprobación de integridad y la
+reproducibilidad del dataset. No constituyen por sí solos una firma digital ni
+una garantía de autenticidad frente a la sustitución simultánea de los datos y
+sus hashes.
 
 #### Tratamiento de la anomalía documental 70992 en PCGE 2026
 
@@ -224,7 +265,7 @@ En el documento oficial impreso se detectó una doble aparición del código `70
 La fuente utilizada para este snapshot no incluye una corrección oficial de esa duplicidad, por lo que se aplicaron los siguientes criterios documentales estrictos:
 
 - Se retuvo en el catálogo canónico la aparición de la página 49 (`70992 Contrato de consultoría TI`), por ser internamente consistente con su código y el prefijo de su cuenta padre (`7099`).
-- Se excluyó del catálogo canónico la primera aparición (`70992 Relacionadas`) y se registró formalmente en [`sources/2026/anomalies.json`](sources/2026/anomalies.json).
+- Se excluyó del catálogo canónico la primera aparición (`70992 Relacionadas`) y se registró formalmente en [`src/pcge/data/2026/anomalies.json`](src/pcge/data/2026/anomalies.json).
 - **No se inventó ni incorporó el código `70902`**: No se realizan correcciones silenciosas ni inferencias de códigos sin respaldo expreso en una norma o fe de erratas oficial.
 
 ---

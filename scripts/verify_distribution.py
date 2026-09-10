@@ -19,8 +19,12 @@ def verify_wheel(wheel_path: Path) -> None:
             "pcge/py.typed",
             "pcge/data/2019/entries.json",
             "pcge/data/2019/metadata.json",
+            "pcge/data/2019/source.json",
+            "pcge/data/2019/anomalies.json",
             "pcge/data/2026/entries.json",
             "pcge/data/2026/metadata.json",
+            "pcge/data/2026/source.json",
+            "pcge/data/2026/anomalies.json",
         ]
         for entry in required_entries:
             assert entry in names, f"Wheel missing required file: {entry}"
@@ -64,15 +68,17 @@ def verify_sdist(sdist_path: Path) -> None:
             "pyproject.toml",
             "schemas/entries.schema.json",
             "schemas/metadata.schema.json",
-            "sources/2019/source.json",
-            "sources/2019/anomalies.json",
-            "sources/2026/source.json",
-            "sources/2026/anomalies.json",
+            "schemas/source.schema.json",
+            "schemas/anomalies.schema.json",
             "src/pcge/py.typed",
             "src/pcge/data/2019/entries.json",
             "src/pcge/data/2019/metadata.json",
+            "src/pcge/data/2019/source.json",
+            "src/pcge/data/2019/anomalies.json",
             "src/pcge/data/2026/entries.json",
             "src/pcge/data/2026/metadata.json",
+            "src/pcge/data/2026/source.json",
+            "src/pcge/data/2026/anomalies.json",
         ]
         for req in required_files:
             assert has_file(req), f"Sdist missing required file: {req}"
@@ -128,8 +134,15 @@ def verify_build_from_sdist(sdist_path: Path) -> None:
         smoke_script = temp_dir / "test_smoke.py"
         smoke_script.write_text(
             (
+                "import datetime\n"
                 "import importlib.resources as importlib_resources\n"
-                "from pcge import available_versions, load_catalog\n\n"
+                "from pcge import (\n"
+                "    PCGEAnomaly,\n"
+                "    PCGEAnomalyOccurrence,\n"
+                "    PCGEProvenance,\n"
+                "    available_versions,\n"
+                "    load_catalog,\n"
+                ")\n\n"
                 'assert available_versions() == ("2019", "2026")\n\n'
                 'cat_2019 = load_catalog("2019")\n'
                 'assert len(cat_2019) == 1757, f"Expected 1757, got {len(cat_2019)}"\n'
@@ -138,7 +151,20 @@ def verify_build_from_sdist(sdist_path: Path) -> None:
                 'assert "10" in cat_2019\n'
                 'assert cat_2019["10"].name == (\n'
                 '    "EFECTIVO Y EQUIVALENTES DE EFECTIVO"\n'
-                ")\n\n"
+                ")\n"
+                "assert isinstance(cat_2019.provenance, PCGEProvenance)\n"
+                "assert (\n"
+                "    cat_2019.provenance.dataset_sha256\n"
+                '    == "FC70E43B94D0718373AB3B9F81202731"\n'
+                '    "E5295EDEDF0DF75231A2FFB3C2BEEC04"\n'
+                ")\n"
+                "assert isinstance(\n"
+                "    cat_2019.provenance.resolution_date, datetime.date\n"
+                ")\n"
+                "assert isinstance(cat_2019.anomalies, tuple)\n"
+                "assert len(cat_2019.anomalies) >= 1\n"
+                "assert isinstance(cat_2019.anomalies[0], PCGEAnomaly)\n"
+                'assert len(cat_2019.anomalies_for("63432")) >= 1\n\n'
                 'cat_2026 = load_catalog("2026")\n'
                 'assert len(cat_2026) == 1636, f"Expected 1636, got {len(cat_2026)}"\n'
                 "assert cat_2026.metadata is not None\n"
@@ -146,7 +172,19 @@ def verify_build_from_sdist(sdist_path: Path) -> None:
                 'assert "10" in cat_2026\n'
                 'assert cat_2026["10"].name == (\n'
                 '    "EFECTIVO Y EQUIVALENTES AL EFECTIVO"\n'
-                ")\n\n"
+                ")\n"
+                "assert isinstance(cat_2026.provenance, PCGEProvenance)\n"
+                "assert (\n"
+                "    cat_2026.provenance.dataset_sha256\n"
+                '    == "70D6CB7DFC501A1306A0E934DF48409F"\n'
+                '    "70E83FFAE033676B49F297D9CBEAF43A"\n'
+                ")\n"
+                "assert isinstance(\n"
+                "    cat_2026.provenance.publication_date, datetime.date\n"
+                ")\n"
+                "assert isinstance(cat_2026.anomalies, tuple)\n"
+                "assert len(cat_2026.anomalies) >= 1\n"
+                'assert len(cat_2026.anomalies_for("70992")) >= 1\n\n'
                 'pkg_files = importlib_resources.files("pcge")\n'
                 'assert pkg_files.joinpath("py.typed").is_file()\n'
                 'print("Smoke test on sdist-built wheel passed successfully.")\n'
