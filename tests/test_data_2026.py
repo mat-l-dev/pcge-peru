@@ -301,6 +301,10 @@ def test_23_source_json_contains_expected_sha256():
     expected_sha256 = "48C568CA196C68348743DDA96C55C38593B0437CE732A4C5D77D7C9ACA896B19"
     assert source_data["source_sha256"] == expected_sha256
     assert source_data["title"] == "Plan Contable General Empresarial 2026"
+    assert (
+        source_data["source_filename"]
+        == "8559148-plan-contable-general-empresarial-pcge-2026(2).pdf"
+    )
     assert source_data["authority"] == "Consejo Normativo de Contabilidad"
     assert source_data["resolution"] == "Resolución N.° 002-2026-EF/30"
     assert source_data["catalog_pdf_pages"] == {"first": 19, "last": 52}

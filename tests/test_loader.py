@@ -258,7 +258,7 @@ def test_load_catalog_real_2026_integration():
     assert prov.mandatory_effective_date == date(2028, 1, 1)
     assert (
         prov.source_filename
-        == "8559200-plan-contable-general-empresarial-pcge-2026(2).pdf"
+        == "8559148-plan-contable-general-empresarial-pcge-2026(2).pdf"
     )
     assert (
         prov.source_sha256

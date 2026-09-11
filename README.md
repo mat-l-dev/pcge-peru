@@ -223,7 +223,8 @@ La librería distribuye snapshots canónicos e inmutables de los catálogos norm
 - **Alcance documental**: Capítulo II (Catálogo de Cuentas), páginas PDF 21 a 62 (numeración impresa 20 a 61).
 - **Autoridad normativa**: Consejo Normativo de Contabilidad (CNC).
 - **Dispositivo legal**: [Resolución N.° 002-2019-EF/30](https://busquedas.elperuano.pe/dispositivo/NL/1772236-1), emitida el 16 de mayo de 2019 y publicada el 24 de mayo de 2019 en el Diario Oficial El Peruano.
-- **Vigencia obligatoria**: A partir del 01 de enero de 2020.
+- **Vigencia obligatoria**: A partir del 01 de enero de 2020 (con aplicación optativa permitida para el ejercicio 2019).
+- **Efecto derogatorio**: Derogó el PCGE 2008 (Resolución CNC N.° 041-2008-EF/94 y modificatoria 043-2010-EF/94) a partir del 01 de enero de 2020.
 - **Procedencia registrada**: Los metadatos de la fuente original, el hash SHA-256 del documento primario y el hash canónico del dataset se conservan en [`src/pcge/data/2019/source.json`](src/pcge/data/2019/source.json).
 - **Anomalías documentadas**: Las inconsistencias editoriales auditadas en la fuente oficial (grupos A a I) y los criterios canónicos aplicados están documentados formalmente en [`src/pcge/data/2019/anomalies.json`](src/pcge/data/2019/anomalies.json).
 
@@ -232,9 +233,10 @@ La librería distribuye snapshots canónicos e inmutables de los catálogos norm
 - **Cantidad de entradas**: 1,636 entradas canónicas.
 - **Alcance documental**: Capítulo II (Catálogo de Cuentas), páginas PDF 19 a 52 (numeración impresa 17 a 50).
 - **Autoridad normativa**: Consejo Normativo de Contabilidad (CNC).
-- **Dispositivo legal**: [Resolución N.° 002-2026-EF/30](https://busquedas.elperuano.pe/dispositivo/NL/2550786-1), publicada el 04 de septiembre de 2026 en el Diario Oficial El Peruano.
-- **Vigencia obligatoria**: A partir del 01 de enero de 2028 (con aplicación anticipada permitida).
-- **Procedencia registrada**: Los metadatos de la fuente original, el hash SHA-256 del documento primario y el hash canónico del dataset se conservan en [`src/pcge/data/2026/source.json`](src/pcge/data/2026/source.json).
+- **Dispositivo legal**: [Resolución N.° 002-2026-EF/30](https://busquedas.elperuano.pe/dispositivo/NL/2550786-1), emitida el 01 de setiembre de 2026 y publicada el 04 de septiembre de 2026 en el Diario Oficial El Peruano.
+- **Vigencia obligatoria**: A partir del 01 de enero de 2028 (con aplicación anticipada permitida en ejercicios precedentes).
+- **Efecto derogatorio**: Deroga el PCGE 2019 a la entrada en vigencia del nuevo plan (01 de enero de 2028).
+- **Procedencia registrada**: Los metadatos de la fuente original, el hash SHA-256 del documento primario y el hash canónico del dataset se conservan en [`src/pcge/data/2026/source.json`](src/pcge/data/2026/source.json). El archivo fuente corresponde al documento oficial publicado por el MEF bajo la publicación 8559148 (`8559148-plan-contable-general-empresarial-pcge-2026(2).pdf`, SHA-256 `48C568CA196C68348743DDA96C55C38593B0437CE732A4C5D77D7C9ACA896B19`).
 - **Anomalías documentadas**: Las inconsistencias editoriales auditadas en la fuente oficial se conservan en [`src/pcge/data/2026/anomalies.json`](src/pcge/data/2026/anomalies.json).
 
 ### Integridad y reproducibilidad de los snapshots
@@ -254,6 +256,14 @@ Estos hashes facilitan la trazabilidad, la comprobación de integridad y la
 reproducibilidad del dataset. No constituyen por sí solos una firma digital ni
 una garantía de autenticidad frente a la sustitución simultánea de los datos y
 sus hashes.
+
+### Política de corrección de datasets y control de revisiones
+
+El proyecto aplica una distinción estricta entre la versión normativa oficial y la revisión de la librería:
+
+- **Versión oficial (`pcge_version`)**: Identifica la edición contable aprobada por el Estado Peruano (`"2019"`, `"2026"`). Una corrección en la representación de la librería **no crea una nueva versión de PCGE**.
+- **Revisión del dataset (`dataset_revision`)**: Entero incremental en `metadata.json` que registra la revisión técnica del snapshot empaquetado. Si se subsana una errata de representación con respaldo oficial, se incrementa `dataset_revision` y se recalcula `dataset_sha256`.
+- **Inmutabilidad**: El archivo canónico `entries.json` permanece inalterado salvo evidencia objetiva de discrepancia con la fuente oficial o emisión de una fe de erratas formal por el CNC.
 
 #### Tratamiento de la anomalía documental 70992 en PCGE 2026
 
