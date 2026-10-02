@@ -118,6 +118,9 @@ class PCGECatalog:
         self._anomalies: tuple[PCGEAnomaly, ...] = tuple(anomalies_list)
         self._entries: dict[str, PCGEEntry] = entries_by_code
         self._entries_order: tuple[PCGEEntry, ...] = tuple(entries_list)
+        self._search_names: tuple[str, ...] = tuple(
+            _normalize_for_search(entry.name) for entry in self._entries_order
+        )
         self._children: dict[str, tuple[PCGEEntry, ...]] = {
             code: tuple(kids) for code, kids in children_by_code.items()
         }
@@ -212,10 +215,10 @@ class PCGECatalog:
 
         norm_query = _normalize_for_search(cleaned)
         matches: list[PCGEEntry] = []
-        for entry in self._entries_order:
-            norm_code = _normalize_for_search(entry.code)
-            norm_name = _normalize_for_search(entry.name)
-            if norm_query in norm_code or norm_query in norm_name:
+        for entry, norm_name in zip(
+            self._entries_order, self._search_names, strict=True
+        ):
+            if norm_query in entry.code or norm_query in norm_name:
                 matches.append(entry)
         return tuple(matches)
 

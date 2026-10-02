@@ -4,7 +4,7 @@ import sys
 from pathlib import Path
 
 import pytest
-from jsonschema import Draft202012Validator
+from jsonschema import Draft202012Validator, FormatChecker
 from jsonschema.exceptions import ValidationError
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
@@ -43,22 +43,22 @@ def anomalies_schema() -> dict:
 
 @pytest.fixture(scope="module")
 def entries_validator(entries_schema: dict) -> Draft202012Validator:
-    return Draft202012Validator(entries_schema)
+    return Draft202012Validator(entries_schema, format_checker=FormatChecker())
 
 
 @pytest.fixture(scope="module")
 def metadata_validator(metadata_schema: dict) -> Draft202012Validator:
-    return Draft202012Validator(metadata_schema)
+    return Draft202012Validator(metadata_schema, format_checker=FormatChecker())
 
 
 @pytest.fixture(scope="module")
 def source_validator(source_schema: dict) -> Draft202012Validator:
-    return Draft202012Validator(source_schema)
+    return Draft202012Validator(source_schema, format_checker=FormatChecker())
 
 
 @pytest.fixture(scope="module")
 def anomalies_validator(anomalies_schema: dict) -> Draft202012Validator:
-    return Draft202012Validator(anomalies_schema)
+    return Draft202012Validator(anomalies_schema, format_checker=FormatChecker())
 
 
 def test_entries_schema_is_valid_draft_2020_12(entries_schema: dict):
@@ -368,3 +368,169 @@ def test_runtime_does_not_import_jsonschema():
     ]
     res = subprocess.run(cmd, capture_output=True, text=True, check=True)
     assert res.returncode == 0
+
+
+@pytest.mark.parametrize("field", ["code", "parent_code"])
+@pytest.mark.parametrize("suffix", ["\n", "\r\n", "\u2028"])
+def test_entries_schema_rejects_trailing_line_breaks(
+    entries_validator: Draft202012Validator, field: str, suffix: str
+):
+    from pcge import PCGEEntry
+
+    entry = {"code": "10", "name": "Caja", "parent_code": "1"}
+    entry[field] += suffix
+    with pytest.raises(ValidationError):
+        entries_validator.validate([entry])
+    with pytest.raises(ValueError):
+        PCGEEntry(**entry)
+
+
+@pytest.mark.parametrize("name", ["   ", "\t\n", "\u00a0\u2003"])
+def test_entries_schema_and_model_reject_whitespace_only_names(
+    entries_validator: Draft202012Validator, name: str
+):
+    from pcge import PCGEEntry
+
+    entry = {"code": "10", "name": name, "parent_code": "1"}
+    with pytest.raises(ValidationError, match="does not match"):
+        entries_validator.validate([entry])
+    with pytest.raises(ValueError, match="whitespace only"):
+        PCGEEntry(**entry)
+
+
+def test_metadata_schema_rejects_trailing_newline(
+    metadata_validator: Draft202012Validator,
+):
+    metadata = json.loads((DATA_2026_DIR / "metadata.json").read_text(encoding="utf-8"))
+    metadata["pcge_version"] += "\n"
+    with pytest.raises(ValidationError) as exc:
+        metadata_validator.validate(metadata)
+    assert exc.value.validator == "pattern"
+
+
+@pytest.mark.parametrize(
+    "field",
+    [
+        "resolution_date",
+        "publication_date",
+        "mandatory_effective_date",
+        "source_sha256",
+        "dataset_sha256",
+    ],
+)
+def test_source_schema_rejects_trailing_newline(
+    source_validator: Draft202012Validator, field: str
+):
+    source = json.loads((DATA_2026_DIR / "source.json").read_text(encoding="utf-8"))
+    source[field] += "\n"
+    with pytest.raises(ValidationError) as exc:
+        source_validator.validate(source)
+    assert exc.value.validator == "pattern"
+
+
+@pytest.mark.parametrize(
+    "field", ["resolution_date", "publication_date", "mandatory_effective_date"]
+)
+@pytest.mark.parametrize("value", ["2026-02-30", "2026-13-01", "2023-02-29"])
+def test_source_schema_rejects_impossible_calendar_dates(
+    source_validator: Draft202012Validator, field: str, value: str
+):
+    source = json.loads((DATA_2026_DIR / "source.json").read_text(encoding="utf-8"))
+    source[field] = value
+    with pytest.raises(ValidationError) as exc:
+        source_validator.validate(source)
+    assert exc.value.validator == "format"
+
+
+def test_source_schema_accepts_real_leap_day(source_validator: Draft202012Validator):
+    source = json.loads((DATA_2026_DIR / "source.json").read_text(encoding="utf-8"))
+    source["resolution_date"] = "2024-02-29"
+    source_validator.validate(source)
+
+
+@pytest.mark.parametrize(
+    "field",
+    [
+        "title",
+        "authority",
+        "resolution",
+        "resolution_url",
+        "source_filename",
+        "catalog_chapter",
+    ],
+)
+def test_source_schema_rejects_whitespace_only_strings(
+    source_validator: Draft202012Validator, field: str
+):
+    source = json.loads((DATA_2026_DIR / "source.json").read_text(encoding="utf-8"))
+    source[field] = " \t\n\u00a0"
+    with pytest.raises(ValidationError) as exc:
+        source_validator.validate(source)
+    assert exc.value.validator == "pattern"
+
+
+@pytest.mark.parametrize(
+    "field", ["code", "codes", "printed_code", "printed_parent_code"]
+)
+@pytest.mark.parametrize("value", [" 70992", "70992 ", "70992\n"])
+def test_anomalies_schema_rejects_surrounding_whitespace_in_codes(
+    anomalies_validator: Draft202012Validator, field: str, value: str
+):
+    anomalies = json.loads(
+        (DATA_2026_DIR / "anomalies.json").read_text(encoding="utf-8")
+    )
+    anomaly = anomalies[0]
+    if field in ("code", "codes"):
+        anomaly.pop("code", None)
+        anomaly.pop("codes", None)
+        anomaly[field] = [value] if field == "codes" else value
+    else:
+        anomaly["occurrences"][0][field] = value
+    with pytest.raises(ValidationError) as exc:
+        anomalies_validator.validate(anomalies)
+    assert exc.value.validator == "pattern"
+
+
+@pytest.mark.parametrize(
+    "field",
+    [
+        "id",
+        "type",
+        "status",
+        "description",
+        "decision",
+        "confirmation_no_invented_code",
+        "printed_name",
+        "disposition",
+    ],
+)
+def test_anomalies_schema_rejects_whitespace_only_strings(
+    anomalies_validator: Draft202012Validator, field: str
+):
+    anomalies = json.loads(
+        (DATA_2026_DIR / "anomalies.json").read_text(encoding="utf-8")
+    )
+    if field in ("printed_name", "disposition"):
+        anomalies[0]["occurrences"][0][field] = " \t\n\u00a0"
+    else:
+        anomalies[0][field] = " \t\n\u00a0"
+    with pytest.raises(ValidationError) as exc:
+        anomalies_validator.validate(anomalies)
+    assert exc.value.validator == "pattern"
+
+
+@pytest.mark.parametrize("field", ["code", "codes"])
+def test_anomalies_schema_preserves_non_numeric_codes_and_documentary_text(
+    anomalies_validator: Draft202012Validator, field: str
+):
+    anomalies = json.loads(
+        (DATA_2026_DIR / "anomalies.json").read_text(encoding="utf-8")
+    )
+    anomaly = anomalies[0]
+    anomaly.pop("code", None)
+    anomaly.pop("codes", None)
+    anomaly[field] = ["ERR-63432"] if field == "codes" else "ERR-63432"
+    anomaly["occurrences"][0]["printed_code"] = "ERR-63432"
+    anomaly["occurrences"][0]["printed_parent_code"] = "Sin código"
+    anomaly["occurrences"][0]["printed_name"] = "  Nombre documental \n"
+    anomalies_validator.validate(anomalies)

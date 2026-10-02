@@ -47,13 +47,29 @@ pre-commit install
 Ejecuta las comprobaciones del proyecto:
 
 ```bash
+python scripts/check_tool_versions.py
 ruff check .
 ruff format --check .
 pytest
 python -m build
+python scripts/verify_distribution.py
 ```
 
 Todos los comandos deben finalizar correctamente y sin errores.
+
+El CI ejecuta las pruebas y verifica los paquetes en Ubuntu y Windows con Python
+3.14. También sube los paquetes construidos, los descarga en otro job y comprueba
+su instalación sin publicar en PyPI. El resultado agregado se llama `CI passed`.
+
+Al actualizar Ruff, cambia tanto el pin de `pyproject.toml` como el `rev` de
+`.pre-commit-config.yaml`. `scripts/check_tool_versions.py` detecta discrepancias,
+incluidas las que puedan introducir las actualizaciones de Dependabot.
+
+Los esquemas JSON comprueban las fechas con `format: "date"`; al utilizarlos con
+`jsonschema`, activa `FormatChecker`. La validación de la librería sigue siendo
+necesaria para restricciones entre registros, como padres existentes y códigos
+duplicados. Los códigos de anomalías no admiten espacios al principio o al final;
+sus textos documentales se conservan sin correcciones silenciosas.
 
 ## Cambios en los datos del PCGE
 
