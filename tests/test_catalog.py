@@ -316,6 +316,19 @@ def test_search_diacritic_insensitive(catalog: PCGECatalog):
     assert [e.code for e in results2] == ["20", "201"]
 
 
+@pytest.mark.parametrize(
+    "query",
+    ["Straße", "STRASSE", "mercaderias", "MERCADERÍAS", "ＭＥＲＣＡＤＥＲＩＡＳ", "１"],
+)
+def test_search_unicode_normalization_preserves_original_entry(query: str):
+    entry = PCGEEntry(code="1", name="Straße — MERCADERI\u0301AS")
+    catalog = PCGECatalog([entry])
+
+    assert catalog.search(query) == (entry,)
+    assert catalog.search(query)[0] is entry
+    assert entry.name == "Straße — MERCADERI\u0301AS"
+
+
 def test_search_preserves_catalog_order(catalog: PCGECatalog):
     results = catalog.search("1")
     assert [e.code for e in results] == [

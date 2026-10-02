@@ -8,15 +8,18 @@
     "properties": {
       "id": {
         "type": "string",
-        "minLength": 1
+        "minLength": 1,
+        "pattern": "\\S"
       },
       "type": {
         "type": "string",
-        "minLength": 1
+        "minLength": 1,
+        "pattern": "\\S"
       },
       "code": {
         "type": "string",
-        "minLength": 1
+        "minLength": 1,
+        "pattern": "^\\S(?:[\\s\\S]*\\S)?(?![\\s\\S])"
       },
       "codes": {
         "type": "array",
@@ -24,24 +27,29 @@
         "uniqueItems": true,
         "items": {
           "type": "string",
-          "minLength": 1
+          "minLength": 1,
+          "pattern": "^\\S(?:[\\s\\S]*\\S)?(?![\\s\\S])"
         }
       },
       "status": {
         "type": "string",
-        "minLength": 1
+        "minLength": 1,
+        "pattern": "\\S"
       },
       "description": {
         "type": "string",
-        "minLength": 1
+        "minLength": 1,
+        "pattern": "\\S"
       },
       "decision": {
         "type": "string",
-        "minLength": 1
+        "minLength": 1,
+        "pattern": "\\S"
       },
       "confirmation_no_invented_code": {
         "type": "string",
-        "minLength": 1
+        "minLength": 1,
+        "pattern": "\\S"
       },
       "occurrences": {
         "type": "array",
@@ -63,19 +71,23 @@
             },
             "printed_code": {
               "type": "string",
-              "minLength": 1
+              "minLength": 1,
+              "pattern": "^\\S(?:[\\s\\S]*\\S)?(?![\\s\\S])"
             },
             "printed_name": {
               "type": "string",
-              "minLength": 1
+              "minLength": 1,
+              "pattern": "\\S"
             },
             "printed_parent_code": {
               "type": "string",
-              "minLength": 1
+              "minLength": 1,
+              "pattern": "^\\S(?:[\\s\\S]*\\S)?(?![\\s\\S])"
             },
             "disposition": {
               "type": "string",
-              "minLength": 1
+              "minLength": 1,
+              "pattern": "\\S"
             }
           },
           "required": [

@@ -187,3 +187,31 @@ def test_anomaly_rejects_empty_and_whitespace_codes():
         _make_valid_anomaly(codes=("",))
     with pytest.raises(ValueError, match="cannot be whitespace only"):
         _make_valid_anomaly(codes=("   ",))
+
+
+@pytest.mark.parametrize("field", ["printed_code", "printed_parent_code"])
+@pytest.mark.parametrize(
+    "code", [" 70992", "70992 ", "\t70992", "70992\n", "\u00a070992\u00a0"]
+)
+def test_occurrence_rejects_surrounding_whitespace_in_codes(field, code):
+    with pytest.raises(ValueError, match=f"{field}.*surrounding whitespace"):
+        _make_valid_occurrence(**{field: code})
+
+
+@pytest.mark.parametrize(
+    "code", [" 70992", "70992 ", "\t70992", "70992\n", "\u00a070992\u00a0"]
+)
+def test_anomaly_rejects_surrounding_whitespace_in_codes(code):
+    with pytest.raises(ValueError, match=r"codes\[1\].*surrounding whitespace"):
+        _make_valid_anomaly(codes=("70992", code))
+
+
+def test_occurrence_preserves_non_numeric_codes_and_documentary_text():
+    occurrence = _make_valid_occurrence(
+        printed_code="ERR-63432",
+        printed_parent_code="Sin código",
+        printed_name="  Nombre documental \n",
+    )
+    assert occurrence.printed_code == "ERR-63432"
+    assert occurrence.printed_parent_code == "Sin código"
+    assert occurrence.printed_name == "  Nombre documental \n"

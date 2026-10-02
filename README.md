@@ -285,6 +285,9 @@ La fuente utilizada para este snapshot no incluye una corrección oficial de esa
 Para ejecutar las verificaciones de calidad de código y pruebas del proyecto:
 
 ```bash
+# Alineación de herramientas locales y CI
+python scripts/check_tool_versions.py
+
 # Análisis estático de código
 ruff check .
 
@@ -296,7 +299,15 @@ pytest
 
 # Construcción de paquetes (wheel y sdist)
 python -m build
+
+# Verificación e instalación aislada de los paquetes construidos
+python scripts/verify_distribution.py
 ```
+
+El CI prueba Python 3.14 en Ubuntu y Windows y comprueba la transferencia de
+artefactos entre jobs, sin publicar paquetes. Las publicaciones en PyPI se
+ejecutan únicamente al publicar una release cuyo tag coincida con la versión
+de `pyproject.toml`.
 
 ---
 

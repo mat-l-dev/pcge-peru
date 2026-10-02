@@ -23,6 +23,9 @@ jobs:
         with:
           python-version: "3.14"
 
+      - name: Check development tool version consistency
+        run: python scripts/check_tool_versions.py
+
       - name: Verify release tag matches package version
         env:
           RELEASE_TAG: ${{ github.event.release.tag_name }}
@@ -82,15 +85,39 @@ jobs:
         run: python scripts/verify_distribution.py
 
       - name: Upload distribution artifacts
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: dist
           path: dist/
           if-no-files-found: error
 
+  verify:
+    name: Verify downloaded release artifacts
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout release source
+        uses: actions/checkout@v7
+        with:
+          ref: ${{ github.event.release.tag_name }}
+
+      - name: Set up Python
+        uses: actions/setup-python@v7
+        with:
+          python-version: "3.14"
+
+      - name: Download distribution artifacts
+        uses: actions/download-artifact@v8
+        with:
+          name: dist
+          path: dist/
+
+      - name: Verify downloaded artifacts and isolated wheel installation
+        run: python scripts/verify_distribution.py --skip-sdist-rebuild
+
   publish:
     name: Publish package to PyPI
-    needs: build
+    needs: verify
     runs-on: ubuntu-latest
     environment:
       name: pypi
@@ -99,7 +126,7 @@ jobs:
 
     steps:
       - name: Download distribution artifacts
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v8
         with:
           name: dist
           path: dist/

@@ -15,6 +15,12 @@ def _validate_str_non_whitespace(val: str, field_name: str) -> None:
         raise ValueError(f"{field_name} cannot be empty or whitespace only")
 
 
+def _validate_printed_code(val: str, field_name: str) -> None:
+    _validate_str_non_whitespace(val, field_name)
+    if val != val.strip():
+        raise ValueError(f"{field_name} cannot contain surrounding whitespace")
+
+
 @dataclass(frozen=True, slots=True)
 class PCGEAnomalyOccurrence:
     occurrence_index: int
@@ -29,9 +35,9 @@ class PCGEAnomalyOccurrence:
         _validate_pos_int(self.occurrence_index, "occurrence_index")
         _validate_pos_int(self.pdf_page, "pdf_page")
         _validate_pos_int(self.printed_page, "printed_page")
-        _validate_str_non_whitespace(self.printed_code, "printed_code")
+        _validate_printed_code(self.printed_code, "printed_code")
         _validate_str_non_whitespace(self.printed_name, "printed_name")
-        _validate_str_non_whitespace(self.printed_parent_code, "printed_parent_code")
+        _validate_printed_code(self.printed_parent_code, "printed_parent_code")
         _validate_str_non_whitespace(self.disposition, "disposition")
 
 
@@ -68,6 +74,8 @@ class PCGEAnomaly:
                 raise ValueError(f"codes[{i}] cannot be empty")
             if not c.strip():
                 raise ValueError(f"codes[{i}] cannot be whitespace only")
+            if c != c.strip():
+                raise ValueError(f"codes[{i}] cannot contain surrounding whitespace")
             if c in seen_codes:
                 raise ValueError(f"Duplicate code {c!r} in codes tuple")
             seen_codes.add(c)

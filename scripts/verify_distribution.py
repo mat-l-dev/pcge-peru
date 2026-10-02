@@ -1,13 +1,17 @@
+import argparse
 import email
+import shutil
 import subprocess
 import sys
 import tarfile
 import tempfile
+import tomllib
 import zipfile
 from pathlib import Path
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
 DIST_DIR = REPO_ROOT / "dist"
+SMOKE_SCRIPT = REPO_ROOT / "scripts" / "smoke_catalog.py"
 
 
 def verify_wheel(wheel_path: Path) -> None:
@@ -41,6 +45,31 @@ def verify_wheel(wheel_path: Path) -> None:
 
         metadata_bytes = zf.read(metadata_entries[0])
         msg = email.message_from_bytes(metadata_bytes)
+
+        with (REPO_ROOT / "pyproject.toml").open("rb") as project_file:
+            project = tomllib.load(project_file)["project"]
+        for field, expected in (
+            ("Name", project["name"]),
+            ("Version", project["version"]),
+            ("Requires-Python", project["requires-python"]),
+        ):
+            actual = msg.get(field)
+            if field == "Requires-Python" and actual is not None:
+                actual = set(actual.split(","))
+                expected = set(expected.split(","))
+            assert actual == expected, (
+                f"Expected {field}: {expected!r}, got: {actual!r}"
+            )
+
+        license_files = msg.get_all("License-File") or []
+        assert license_files == project["license-files"], (
+            f"Expected license files {project['license-files']}, got {license_files}"
+        )
+        dist_info = metadata_entries[0].rsplit("/", 1)[0]
+        for license_file in license_files:
+            assert f"{dist_info}/licenses/{license_file}" in names, (
+                f"Wheel missing license file: {license_file}"
+            )
 
         license_expr = msg.get("License-Expression")
         assert license_expr == "Apache-2.0", (
@@ -85,40 +114,11 @@ def verify_sdist(sdist_path: Path) -> None:
     print("  -> Sdist verification passed.")
 
 
-def verify_build_from_sdist(sdist_path: Path) -> None:
-    print(f"Testing build from sdist: {sdist_path.name}")
+def verify_installed_wheel(wheel_path: Path) -> None:
+    """Test the exact wheel in a fresh venv outside the checkout."""
+    print(f"Testing isolated installation: {wheel_path.name}")
     with tempfile.TemporaryDirectory() as td:
         temp_dir = Path(td)
-        with tarfile.open(sdist_path, "r:gz") as tf:
-            tf.extractall(temp_dir)
-
-        extracted_dirs = [d for d in temp_dir.iterdir() if d.is_dir()]
-        assert len(extracted_dirs) == 1, (
-            f"Expected 1 directory in unpacked sdist, found {extracted_dirs}"
-        )
-        source_tree = extracted_dirs[0]
-
-        wheel_out = temp_dir / "wheel_out"
-        wheel_out.mkdir()
-
-        cmd_build = [
-            sys.executable,
-            "-m",
-            "build",
-            "--wheel",
-            "--outdir",
-            str(wheel_out),
-        ]
-        subprocess.run(cmd_build, cwd=str(source_tree), check=True)
-
-        built_wheels = list(wheel_out.glob("*.whl"))
-        assert len(built_wheels) == 1, f"Expected 1 built wheel, found {built_wheels}"
-        new_wheel = built_wheels[0]
-
-        # Verify wheel content from sdist
-        verify_wheel(new_wheel)
-
-        # Create isolated venv and install
         venv_dir = temp_dir / "venv"
         subprocess.run([sys.executable, "-m", "venv", str(venv_dir)], check=True)
         if sys.platform == "win32":
@@ -127,94 +127,83 @@ def verify_build_from_sdist(sdist_path: Path) -> None:
             venv_python = venv_dir / "bin" / "python"
 
         subprocess.run(
-            [str(venv_python), "-m", "pip", "install", "--no-deps", str(new_wheel)],
+            [
+                str(venv_python),
+                "-I",
+                "-m",
+                "pip",
+                "install",
+                "--disable-pip-version-check",
+                "--no-index",
+                "--no-deps",
+                str(wheel_path.resolve()),
+            ],
             check=True,
         )
-
-        smoke_script = temp_dir / "test_smoke.py"
-        smoke_script.write_text(
-            (
-                "import datetime\n"
-                "import importlib.resources as importlib_resources\n"
-                "from pcge import (\n"
-                "    PCGEAnomaly,\n"
-                "    PCGEAnomalyOccurrence,\n"
-                "    PCGEProvenance,\n"
-                "    available_versions,\n"
-                "    load_catalog,\n"
-                ")\n\n"
-                'assert available_versions() == ("2019", "2026")\n\n'
-                'cat_2019 = load_catalog("2019")\n'
-                'assert len(cat_2019) == 1757, f"Expected 1757, got {len(cat_2019)}"\n'
-                "assert cat_2019.metadata is not None\n"
-                'assert cat_2019.metadata.pcge_version == "2019"\n'
-                'assert "10" in cat_2019\n'
-                'assert cat_2019["10"].name == (\n'
-                '    "EFECTIVO Y EQUIVALENTES DE EFECTIVO"\n'
-                ")\n"
-                "assert isinstance(cat_2019.provenance, PCGEProvenance)\n"
-                "assert (\n"
-                "    cat_2019.provenance.dataset_sha256\n"
-                '    == "FC70E43B94D0718373AB3B9F81202731"\n'
-                '    "E5295EDEDF0DF75231A2FFB3C2BEEC04"\n'
-                ")\n"
-                "assert isinstance(\n"
-                "    cat_2019.provenance.resolution_date, datetime.date\n"
-                ")\n"
-                "assert isinstance(cat_2019.anomalies, tuple)\n"
-                "assert len(cat_2019.anomalies) >= 1\n"
-                "assert isinstance(cat_2019.anomalies[0], PCGEAnomaly)\n"
-                'assert len(cat_2019.anomalies_for("63432")) >= 1\n\n'
-                'cat_2026 = load_catalog("2026")\n'
-                'assert len(cat_2026) == 1636, f"Expected 1636, got {len(cat_2026)}"\n'
-                "assert cat_2026.metadata is not None\n"
-                'assert cat_2026.metadata.pcge_version == "2026"\n'
-                'assert "10" in cat_2026\n'
-                'assert cat_2026["10"].name == (\n'
-                '    "EFECTIVO Y EQUIVALENTES AL EFECTIVO"\n'
-                ")\n"
-                "assert isinstance(cat_2026.provenance, PCGEProvenance)\n"
-                "assert (\n"
-                "    cat_2026.provenance.dataset_sha256\n"
-                '    == "70D6CB7DFC501A1306A0E934DF48409F"\n'
-                '    "70E83FFAE033676B49F297D9CBEAF43A"\n'
-                ")\n"
-                "assert isinstance(\n"
-                "    cat_2026.provenance.publication_date, datetime.date\n"
-                ")\n"
-                "assert isinstance(cat_2026.anomalies, tuple)\n"
-                "assert len(cat_2026.anomalies) >= 1\n"
-                'assert len(cat_2026.anomalies_for("70992")) >= 1\n\n'
-                'pkg_files = importlib_resources.files("pcge")\n'
-                'assert pkg_files.joinpath("py.typed").is_file()\n'
-                'print("Smoke test on sdist-built wheel passed successfully.")\n'
-            ),
-            encoding="utf-8",
-        )
-
+        smoke_script = temp_dir / "smoke_catalog.py"
+        shutil.copyfile(SMOKE_SCRIPT, smoke_script)
         subprocess.run(
-            [str(venv_python), str(smoke_script)],
+            [str(venv_python), "-I", str(smoke_script)],
             cwd=str(temp_dir),
             check=True,
         )
+    print("  -> Isolated wheel installation passed.")
+
+
+def verify_build_from_sdist(sdist_path: Path) -> None:
+    print(f"Testing build from sdist: {sdist_path.name}")
+    with tempfile.TemporaryDirectory() as td:
+        temp_dir = Path(td)
+        with tarfile.open(sdist_path, "r:gz") as tf:
+            tf.extractall(temp_dir, filter="data")
+
+        extracted_dirs = [d for d in temp_dir.iterdir() if d.is_dir()]
+        assert len(extracted_dirs) == 1, (
+            f"Expected 1 directory in unpacked sdist, found {extracted_dirs}"
+        )
+        source_tree = extracted_dirs[0]
+        wheel_out = temp_dir / "wheel_out"
+        wheel_out.mkdir()
+        subprocess.run(
+            [
+                sys.executable,
+                "-m",
+                "build",
+                "--wheel",
+                "--outdir",
+                str(wheel_out),
+            ],
+            cwd=str(source_tree),
+            check=True,
+        )
+        built_wheels = list(wheel_out.glob("*.whl"))
+        assert len(built_wheels) == 1, f"Expected 1 built wheel, found {built_wheels}"
+        verify_wheel(built_wheels[0])
+        verify_installed_wheel(built_wheels[0])
     print("  -> Build and test from sdist passed.")
 
 
 def main() -> None:
+    parser = argparse.ArgumentParser(description="Verify built distribution artifacts.")
+    parser.add_argument(
+        "--skip-sdist-rebuild",
+        action="store_true",
+        help="Verify and install downloaded artifacts without rebuilding the sdist.",
+    )
+    args = parser.parse_args()
+
     if not DIST_DIR.is_dir():
         print(f"Dist directory not found at {DIST_DIR}", file=sys.stderr)
         sys.exit(1)
 
     wheels = list(DIST_DIR.glob("*.whl"))
     sdists = list(DIST_DIR.glob("*.tar.gz"))
-
     if len(wheels) != 1:
         print(
             f"Expected exactly 1 wheel in {DIST_DIR}, found {len(wheels)}",
             file=sys.stderr,
         )
         sys.exit(1)
-
     if len(sdists) != 1:
         print(
             f"Expected exactly 1 sdist in {DIST_DIR}, found {len(sdists)}",
@@ -224,7 +213,9 @@ def main() -> None:
 
     verify_wheel(wheels[0])
     verify_sdist(sdists[0])
-    verify_build_from_sdist(sdists[0])
+    verify_installed_wheel(wheels[0])
+    if not args.skip_sdist_rebuild:
+        verify_build_from_sdist(sdists[0])
     print("\nAll distribution artifact checks passed successfully.")
 
 
