@@ -176,6 +176,7 @@ for a in anomalies_709:
 - **Manejo de códigos inexistentes**: `catalog[code]` lanza `KeyError` si el código no forma parte del catálogo. Para evitar excepciones, utilice `catalog.get(code)` o la verificación `"code" in catalog`.
 - **Estructuras inmutables**: `catalog.children()`, `catalog.ancestors()` y `catalog.descendants()` devuelven tuplas inmutables (`tuple[PCGEEntry, ...]`).
 - **Búsqueda insensible a tildes y caja**: El método `catalog.search()` normaliza los caracteres de entrada, de modo que términos como `"mercaderias"`, `"MERCADERÍAS"` y `"mercaderías"` devuelven los mismos resultados.
+- **Consultas de búsqueda vacías**: `catalog.search()` lanza `ValueError` si la consulta está vacía o contiene solo espacios, incluso después de normalizarla (por ejemplo, un acento aislado `´`).
 
 ---
 
