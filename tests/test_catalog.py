@@ -318,7 +318,16 @@ def test_search_diacritic_insensitive(catalog: PCGECatalog):
 
 @pytest.mark.parametrize(
     "query",
-    ["Straße", "STRASSE", "mercaderias", "MERCADERÍAS", "ＭＥＲＣＡＤＥＲＩＡＳ", "１"],
+    [
+        "Straße",
+        "STRASSE",
+        "mercaderias",
+        "MERCADERÍAS",
+        "MERCADERI\u0301AS",
+        "ＭＥＲＣＡＤＥＲＩＡＳ",
+        "１",
+        "1\u0301",
+    ],
 )
 def test_search_unicode_normalization_preserves_original_entry(query: str):
     entry = PCGEEntry(code="1", name="Straße — MERCADERI\u0301AS")
@@ -358,6 +367,17 @@ def test_search_empty_or_whitespace_query_raises_value_error(catalog: PCGECatalo
 
     with pytest.raises(ValueError):
         catalog.search("\t\n")
+
+
+@pytest.mark.parametrize(
+    "query",
+    ["\u0301", "\u0308", " \t\u0301\u0308\n", "\u0301 \u0308", "\u00b4", "\u00a8"],
+)
+def test_search_query_without_text_after_normalization_raises_value_error(
+    catalog: PCGECatalog, query: str
+):
+    with pytest.raises(ValueError):
+        catalog.search(query)
 
 
 @pytest.mark.parametrize("invalid_query", [123, None, ["caja"], True])

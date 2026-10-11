@@ -2,6 +2,8 @@
 
 ## Sin publicar
 
+- Rechazo de consultas de búsqueda que quedan vacías o solo con espacios tras
+  normalizar acentos, evitando coincidencias sin un término de búsqueda.
 - Rechazo de espacios alrededor de códigos de anomalías para mantener consultas
   coherentes con los valores admitidos por el modelo.
 - Esquemas JSON más estrictos para códigos, textos vacíos y fechas calendáricas.

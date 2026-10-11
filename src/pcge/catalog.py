@@ -214,6 +214,10 @@ class PCGECatalog:
             raise ValueError("query cannot be empty or whitespace only")
 
         norm_query = _normalize_for_search(cleaned)
+        if not norm_query.strip():
+            raise ValueError(
+                "query cannot be empty or whitespace only after normalization"
+            )
         matches: list[PCGEEntry] = []
         for entry, norm_name in zip(
             self._entries_order, self._search_names, strict=True
