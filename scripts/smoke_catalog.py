@@ -19,6 +19,7 @@ cat_2019 = load_catalog("2019")
 assert len(cat_2019) == 1757, f"Expected 1757, got {len(cat_2019)}"
 assert cat_2019.metadata is not None
 assert cat_2019.metadata.pcge_version == "2019"
+assert cat_2019.metadata.dataset_revision == 2
 assert "10" in cat_2019
 assert cat_2019["10"].name == ("EFECTIVO Y EQUIVALENTES DE EFECTIVO")
 assert isinstance(cat_2019.provenance, PCGEProvenance)
@@ -37,12 +38,13 @@ cat_2026 = load_catalog("2026")
 assert len(cat_2026) == 1636, f"Expected 1636, got {len(cat_2026)}"
 assert cat_2026.metadata is not None
 assert cat_2026.metadata.pcge_version == "2026"
+assert cat_2026.metadata.dataset_revision == 2
 assert "10" in cat_2026
 assert cat_2026["10"].name == ("EFECTIVO Y EQUIVALENTES AL EFECTIVO")
 assert isinstance(cat_2026.provenance, PCGEProvenance)
 assert (
-    cat_2026.provenance.dataset_sha256 == "70D6CB7DFC501A1306A0E934DF48409F"
-    "70E83FFAE033676B49F297D9CBEAF43A"
+    cat_2026.provenance.dataset_sha256 == "DC8047E50C937312DA6F4BAB9E2D37A9"
+    "A55DB478AA8B3605F7AB730FFDDBFA6A"
 )
 assert isinstance(cat_2026.provenance.publication_date, datetime.date)
 assert isinstance(cat_2026.anomalies, tuple)

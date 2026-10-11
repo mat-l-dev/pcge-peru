@@ -67,7 +67,7 @@ def test_02_catalog_metadata_exists(catalog_2019: PCGECatalog):
     assert catalog_2019.metadata is not None
     assert catalog_2019.metadata.pcge_version == "2019"
     assert catalog_2019.metadata.schema_version == 1
-    assert catalog_2019.metadata.dataset_revision == 1
+    assert catalog_2019.metadata.dataset_revision == 2
     assert catalog_2019.metadata.entry_count == 1757
     assert catalog_2019.metadata.entry_count == len(catalog_2019)
 

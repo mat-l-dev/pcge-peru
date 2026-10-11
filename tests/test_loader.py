@@ -208,7 +208,7 @@ def test_load_catalog_real_2019_integration():
     assert cat.metadata is not None
     assert cat.metadata.pcge_version == "2019"
     assert cat.metadata.schema_version == 1
-    assert cat.metadata.dataset_revision == 1
+    assert cat.metadata.dataset_revision == 2
     assert cat.metadata.entry_count == 1757
 
     # Provenance
@@ -243,7 +243,7 @@ def test_load_catalog_real_2026_integration():
     assert cat.metadata is not None
     assert cat.metadata.pcge_version == "2026"
     assert cat.metadata.schema_version == 1
-    assert cat.metadata.dataset_revision == 1
+    assert cat.metadata.dataset_revision == 2
     assert cat.metadata.entry_count == 1636
 
     # Provenance
@@ -266,7 +266,7 @@ def test_load_catalog_real_2026_integration():
     )
     assert (
         prov.dataset_sha256
-        == "70D6CB7DFC501A1306A0E934DF48409F70E83FFAE033676B49F297D9CBEAF43A"
+        == "DC8047E50C937312DA6F4BAB9E2D37A9A55DB478AA8B3605F7AB730FFDDBFA6A"
     )
     assert prov.catalog_pdf_pages == (19, 52)
     assert prov.catalog_printed_pages == (17, 50)

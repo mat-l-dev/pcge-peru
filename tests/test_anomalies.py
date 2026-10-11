@@ -146,6 +146,19 @@ def test_official_catalogs_anomalies_counts():
     assert len(cat_2026.anomalies) == 1
 
 
+def test_2019_account_61_canonical_occurrence_matches_official_pdf():
+    catalog = load_catalog("2019")
+    (anomaly,) = catalog.anomalies_for("61")
+    (occurrence,) = (
+        occurrence
+        for occurrence in anomaly.occurrences
+        if occurrence.printed_code == "61"
+        and occurrence.disposition == "retained_in_canonical_catalog"
+    )
+    assert occurrence.printed_name == "VARIACIÓN DE INVENTARIOS"
+    assert (occurrence.pdf_page, occurrence.printed_page) == (49, 48)
+
+
 def test_official_catalogs_anomalies_for_real_cases():
     cat_2019 = load_catalog("2019")
     cat_2026 = load_catalog("2026")

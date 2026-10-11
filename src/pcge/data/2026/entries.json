@@ -5146,7 +5146,7 @@
   },
   {
     "code": "60931",
-    "name": "repuestos Transporte",
+    "name": "Transporte",
     "parent_code": "6093"
   },
   {
@@ -6601,7 +6601,7 @@
   },
   {
     "code": "68714",
-    "name": "directores Cuentas por cobrar diversas – Terceros",
+    "name": "Cuentas por cobrar diversas – Terceros",
     "parent_code": "6871"
   },
   {

@@ -61,9 +61,9 @@ def test_04_schema_version_is_one(catalog_2026: PCGECatalog):
     assert catalog_2026.metadata.schema_version == 1
 
 
-def test_05_dataset_revision_is_one(catalog_2026: PCGECatalog):
+def test_05_dataset_revision_is_two(catalog_2026: PCGECatalog):
     assert catalog_2026.metadata is not None
-    assert catalog_2026.metadata.dataset_revision == 1
+    assert catalog_2026.metadata.dataset_revision == 2
 
 
 def test_06_entry_count_matches_catalog_len(catalog_2026: PCGECatalog):
@@ -271,6 +271,22 @@ def test_21_representative_entries_match_pdf(catalog_2026: PCGECatalog):
     assert catalog_2026["91"].name == "GASTOS DE OPERACIÓN"
     assert catalog_2026["92"].name == "GASTOS DE INVERSIÓN"
     assert catalog_2026["93"].name == "GASTOS DE FINANCIAMIENTO"
+
+
+@pytest.mark.parametrize(
+    ("code", "expected_name", "preceding_word"),
+    [
+        ("60931", "Transporte", "repuestos"),
+        ("68714", "Cuentas por cobrar diversas – Terceros", "directores"),
+    ],
+)
+def test_names_after_page_breaks_match_official_pdf(
+    catalog_2026: PCGECatalog, code: str, expected_name: str, preceding_word: str
+):
+    # PDF pages 40 and 46 (printed pages 38 and 44): the first word on the
+    # page continues the preceding entry, not the entry that follows it.
+    assert catalog_2026[code].name == expected_name
+    assert code not in {entry.code for entry in catalog_2026.search(preceding_word)}
 
 
 def test_22_schemas_remain_valid_json():
